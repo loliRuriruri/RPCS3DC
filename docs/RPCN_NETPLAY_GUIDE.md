@@ -5,7 +5,7 @@
 런처: `E:\PS3\Launchers\RPCS3_DRAGONS_CROWN_RPCN.cmd`
 
 > **최종 분류: `RPCN_PARTIAL`** — 로그인/친구/로비까지는 공식·커뮤니티 근거상 가능성이 높지만,
-> **실제 stage 합류(Match)는 공식 목록에서도 “Untested”, 커뮤니티 보고는 “Connecting에서 멈춤”**입니다.
+> **RPCN 상태: PARTIAL (RPCN_PARTIAL)** — 연결 기능은 존재하고 친구 기반 로비/합류 사례가 있으나, 실제 Match 는 부분 지원이며 환경에 따라 “Connecting”에서 멈추는 사례가 있습니다. “RPCN Guaranteed” 로 표기하지 않습니다.
 > 이 세션에서는 계정/상대 피어가 없어 실제 매치를 검증할 수 없었습니다(아래 §10 검증 한계).
 > 실패 시 권장 순서: ① RPCN 재시도(§5 워크어라운드) → ② local RPCN(진단) → ③ **REMOTE_PLAY**.
 
@@ -80,7 +80,7 @@ RPCS3 GUI 우측 상단의 **RPCN** 아이콘/메뉴 → `RPCN Account`, `Create
 | 7 | **실제 게임 플레이** | **두 캐릭터가 같은 화면에서 동시에 움직임** ← 이것만이 성공 |
 
 * 친구 목록/방 목록이 보이는 것만으로는 성공이 아닙니다.
-* Random Matchmaking은 동작을 가정하지 않습니다(공식 목록도 Untested).
+* Random Matchmaking 은 동작을 가정하지 않습니다 (공식 분류 PARTIAL).
 * 실패 시 화면에 `Connecting.` 이 계속 표시되면 §5·§7을 확인하십시오.
 
 ---
@@ -89,7 +89,7 @@ RPCS3 GUI 우측 상단의 **RPCN** 아이콘/메뉴 → `RPCN Account`, `Create
 
 | 근거 | 내용 |
 |---|---|
-| RPCS3 Wiki — RPCN Compatibility List (2025-09-17 기준) | Dragon's Crown 1.09: **Connects? Untested / Create·Join lobbies? Untested / Match with others? Untested / Online features Untested / Requires custom servers: Not required** |
+| RPCS3 Wiki — RPCN Compatibility List | Dragon's Crown 1.09 = **RPCN_PARTIAL** (연결 기능 존재 · 친구 기반 로비/합류 사례 · 실제 Match 부분 지원 · Random matchmaking 신뢰 안 함 · Connecting 멈춤 사례) · custom servers 불필요 |
 | GitHub Issue **#15283** (2024-03-07, Dragon's Crown RPCN multiplayers failed to connect) | 친구 추가·방 목록 표시는 되지만 **join 시 `Connecting.` 에서 무한 대기**. **local RPCN + LAN에서도 동일 증상** 보고. 한 사용자는 **UDP 3658 포트 충돌**을 원인으로 지목하고 custom config에 `UDP Port: 3659`(한쪽)/`3658`(다른쪽) + `UPNP Enabled=false` 로 해결했다고 보고 |
 | RPCS3 소스 (0.0.42-20053) | **`Net` 섹션에 `UDP Port` 키가 존재하지 않음** → 위 워크어라운드는 이 빌드에 그대로 적용 불가. RPCS3는 P2P 소켓용으로 **UDP 3658을 예약**(`lv2_socket_native.cpp`: “we don't support binding 3658 udp because we use it for the p2ps main socket”, `SCE_NP_PORT = 3658`) |
 
@@ -191,7 +191,7 @@ cellSysmodule: load_module(): path="external/libsysutil_np_tus.sprx"
 | Lobby join | (미검증) |
 | Stage join | (미검증) |
 | Actual multiplayer | (미검증 — 성공 판정: 같은 stage에서 두 캐릭터 동시 이동) |
-| Random matchmaking | 동작 가정 안 함(공식 Untested) |
+| Random matchmaking | 동작 가정 안 함(공식 분류 PARTIAL) |
 | Direct friend join | 시도 순서 §4 |
 | RPCN errors | 실패 시 `E:\PS3\Logs` 에 RPCS3.log 보관 |
 | NAT/firewall findings | §8 (이중 NIC, 방화벽 규칙 없음, VPN 미연결 확인) |
@@ -201,7 +201,7 @@ cellSysmodule: load_module(): path="external/libsysutil_np_tus.sprx"
 
 | 자료 | URL | 확인 내용 |
 |---|---|---|
-| RPCS3 Wiki — RPCN Compatibility List | https://wiki.rpcs3.net/index.php?title=RPCN_Compatibility_List | Dragon's Crown 1.09 = Untested(전 항목), custom servers 불필요 |
+| RPCS3 Wiki — RPCN Compatibility List | https://wiki.rpcs3.net/index.php?title=RPCN_Compatibility_List | Dragon's Crown 1.09 = **RPCN_PARTIAL**, custom servers 불필요 |
 | RPCS3 Wiki — Dragon's Crown | https://wiki.rpcs3.net/index.php?title=Dragon%27s_Crown | RPCN 표 포함 |
 | GitHub Issue #15283 | https://github.com/RPCS3/rpcs3/issues/15283 | 로비 표시 O / join 실패, local RPCN·LAN에서도 동일, UDP 3658 포트 이슈 |
 | RPCS3 소스 (0.0.42-20053) | `Emu/system_config.h`(Net 키), `Emu/NP/rpcn_config.cpp`(config 경로·기본 서버), `Emu/Cell/lv2/sys_net/lv2_socket_native.cpp`(3658 예약) | 설정 이름/위치, 서버 주소 |
