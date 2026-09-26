@@ -41,8 +41,9 @@ function Scrub-Text([string]$path) {
     } catch { }
 }
 
-# ---------------------------------------------------------------- 1) 런처
+# ---------------------------------------------------------------- 1) 런처 + Remote Co-op Helper
 Copy-Safe "$root\Launcher\DragonCrownProEnhanced.exe" "Launcher\DragonCrownProEnhanced.exe"
+Copy-Safe "$root\Launcher\DragonCrownRemoteCoopSetup.exe" "Launcher\DragonCrownRemoteCoopSetup.exe"
 
 # ---------------------------------------------------------------- 2) 프로필 5종 (PSID 스크럽)
 foreach ($p in 'DC_PRO_4K','DC_PRO_MAX_5K','DC_NETPLAY','NETPLAY_SAFE','DC_CHEAT_OFFLINE') {
@@ -168,11 +169,12 @@ Dragon's Crown PC Edition (Phase 1 RC) — 설치 가이드
 =====================================================
 
 [이 패키지에 포함된 것]
-  Launcher\DragonCrownProEnhanced.exe   GUI 런처 (.NET 8 self-contained)
+  Launcher\DragonCrownProEnhanced.exe       GUI 런처 (.NET 8 self-contained)
+  Launcher\DragonCrownRemoteCoopSetup.exe   Remote Co-op Helper (Sunshine/Moonlight 설치·진단)
   Profiles\Dragons_Crown\*              4K 300% / 5K 400% / NETPLAY / NETPLAY_SAFE / CHEAT
   ReShade\                              프리셋 · 셰이더 · ZERO-BANNER(선택 설치) · 안내
   Tools\                                방화벽 · 보더리스 · 세이브 백업 · 치트 검증
-  Docs\                                 문서 일체 (Acceptance/멀티플레이/문제해결 등)
+  Docs\                                 문서 일체 (Remote Co-op / Acceptance / 문제해결 등)
 
 [이 패키지에 없는 것 — 각자 직접 준비]
   · 게임 덤프 (본인 소유분)         — 저작권 보호를 위해 포함하지 않습니다.
@@ -198,7 +200,10 @@ Dragon's Crown PC Edition (Phase 1 RC) — 설치 가이드
 
 [멀티플레이]
   · Local        : 같은 PC 2인 (2P 패드 필요)
-  · Remote Co-op : Sunshine + Moonlight — 친구는 게임/펌웨어가 필요 없습니다 (Moonlight 클라이언트만).
+  · Remote Co-op : Launcher\DragonCrownRemoteCoopSetup.exe (Remote Co-op Helper)
+                   HOST(게임 PC): [INSTALL / REPAIR HOST] → Sunshine + 가상패드 + RPCS3 P2 XInput
+                   GUEST(친구 PC): [INSTALL MOONLIGHT] + 패드 + HOST 페어링 (RPCS3/게임 불필요)
+                   자세한 절차: Docs\REMOTE_COOP_SETUP.md
   · RPCN Online  : 각자 계정 필요 (RPCS3 → RPCN → Create Account).
                    첫 테스트는 Standard + Netplay Safe(기본 ON) + 유선 LAN + VPN OFF 권장.
                    성공 판정: 같은 stage 입장 + 동시 조작 + 최소 1회 전투

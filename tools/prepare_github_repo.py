@@ -17,12 +17,14 @@ INCLUDE_DIRS = {
     "Docs": ("docs", ("*.md",)),
     "Launchers": ("launcher", ("*.cmd", "*.ps1")),
     "Launcher\\src": ("launcher/src", ("*.cs", "*.xaml", "*.csproj")),
+    "remote-coop\\src": ("remote-coop/src", ("*.cs", "*.xaml", "*.csproj")),
     "Tools": ("tools", ("*.py", "*.ps1", "*.cmd")),
 }
 
-# single files copied to the repository root (scrubbed)
+# single files copied to a fixed repository path (scrubbed)
 ROOT_FILES = {
     "README.md": "README.md",
+    "remote-coop\\build_remote_coop_setup.cmd": "remote-coop/build_remote_coop_setup.cmd",
 }
 
 GITIGNORE = """\
