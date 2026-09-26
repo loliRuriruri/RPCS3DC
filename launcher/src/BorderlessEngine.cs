@@ -117,9 +117,32 @@ namespace DragonCrownProEnhanced
             catch { return Array.Empty<uint>(); }
         }
 
-        private static WinInfo FindGameWindow()
+        /// <summary>
+        /// Locates the game render window. The window of the process we launched
+        /// (launchPid) always wins; a fallback search across all rpcs3 processes is
+        /// only used when that process is gone (e.g. relaunch / manual restore).
+        /// </summary>
+        private WinInfo FindGameWindow()
         {
-            var pids = Rpcs3Pids();
+            if (_launchPid > 0)
+            {
+                bool alive;
+                try { using var pr = Process.GetProcessById(_launchPid); alive = !pr.HasExited; }
+                catch { alive = false; }
+
+                if (alive)
+                {
+                    // only the launched process: never touch another RPCS3 instance's window
+                    var own = FindGameWindowIn(new[] { (uint)_launchPid });
+                    if (own != null) return own;
+                    return null; // launched process exists but has no game window yet -> keep waiting
+                }
+            }
+            return FindGameWindowIn(Rpcs3Pids());
+        }
+
+        private static WinInfo FindGameWindowIn(uint[] pids)
+        {
             if (pids.Length == 0) return null;
             var wins = Windows(pids);
             return wins.Where(w => w.Visible && w.Title.Contains("FPS:") && w.Title.Contains("| Vulkan |"))
@@ -128,11 +151,9 @@ namespace DragonCrownProEnhanced
                    ?? wins.Where(w => w.Visible && w.Title.Contains("[BCAS20298]")).FirstOrDefault();
         }
 
-        private static List<WinInfo> Titlebars()
+        private static List<WinInfo> Titlebars(uint pid)
         {
-            var pids = Rpcs3Pids();
-            if (pids.Length == 0) return new List<WinInfo>();
-            return Windows(pids).Where(w => w.Cls == "_q_titlebar").ToList();
+            return Windows(new[] { pid }).Where(w => w.Cls == "_q_titlebar").ToList();
         }
 
         private static List<MONITORINFOEX> Monitors()
@@ -167,6 +188,7 @@ namespace DragonCrownProEnhanced
         [DllImport("user32.dll")] private static extern IntPtr MonitorFromPoint(POINT pt, uint flags);
 
         private string StatePath => Path.Combine(_project.LogDir, "borderless_state.json");
+        private string StopFlagPath => Path.Combine(_project.LogDir, "borderless_stop.flag");
 
         private void Loop()
         {
@@ -179,6 +201,7 @@ namespace DragonCrownProEnhanced
                 var deadline = DateTime.UtcNow.AddSeconds(300);
                 while (!_stop && DateTime.UtcNow < deadline && win == null)
                 {
+                    if (File.Exists(StopFlagPath)) { _project.Log("borderless: stop requested before apply"); return; }
                     if (Rpcs3Pids().Length == 0) { Thread.Sleep(500); continue; }
                     win = FindGameWindow();
                     if (win == null) Thread.Sleep(700);
@@ -192,6 +215,11 @@ namespace DragonCrownProEnhanced
                 while (!_stop)
                 {
                     Thread.Sleep(700);
+                    if (File.Exists(StopFlagPath))
+                    {
+                        _project.Log("borderless: stop requested -> restoring and exiting watcher");
+                        break;
+                    }
                     if (Rpcs3Pids().Length == 0) break;
                     var cur = FindGameWindow();
                     if (cur == null)
@@ -247,7 +275,8 @@ namespace DragonCrownProEnhanced
         private void Apply(WinInfo win)
         {
             var mon = TargetMonitor(win.Hwnd);
-            var titlebars = Titlebars();
+            var titlebars = Titlebars(win.Pid);
+            _project.Log($"borderless: target pid={win.Pid} hwnd=0x{win.Hwnd.ToInt64():X} title=\"{win.Title}\"");
 
             // capture the original state once per window (never overwrite it on re-apply)
             bool keep = false;
@@ -308,6 +337,22 @@ namespace DragonCrownProEnhanced
         {
             try { SetProcessDpiAwarenessContext(new IntPtr(-4)); } catch { }
             Restore();
+        }
+
+        /// <summary>
+        /// Manual restore (--restore-window / TOOLS button): asks the live watcher to yield
+        /// (flag file) and restores the saved style immediately. Without the flag the watcher
+        /// would re-apply borderless within ~2 seconds.
+        /// </summary>
+        public void RequestStopAndRestore()
+        {
+            try
+            {
+                Directory.CreateDirectory(_project.LogDir);
+                File.WriteAllText(StopFlagPath, DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+            }
+            catch { }
+            RestoreNow();
         }
 
         private void Restore()

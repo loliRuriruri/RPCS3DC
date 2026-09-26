@@ -26,10 +26,13 @@ namespace DragonCrownProEnhanced
                 catch { }
             };
             // CLI mode (also used for automated verification):
-            //   DragonCrownProEnhanced.exe --launch PLAY|PROMAX|NETPLAY|CHEAT|KNOWNGOOD
-            //   DragonCrownProEnhanced.exe --backup [label]
-            //   DragonCrownProEnhanced.exe --restore-window
-            //   DragonCrownProEnhanced.exe --status <outfile>
+            //   DragonCrownProEnhanced.exe --launch STANDARD|PROENHANCED|PROMAX|NETPLAY|RPCNSAFE|LOCAL|REMOTE|CHEAT|KNOWNGOOD [--no-wait]
+            //   DragonCrownProEnhanced.exe --preset Standard|ProEnhanced
+            //   DragonCrownProEnhanced.exe --resolution 4K|5K
+            //   DragonCrownProEnhanced.exe --backup [label] / --backup-settings [label]
+            //   DragonCrownProEnhanced.exe --restore-window     (immediate restore, no watcher)
+            //   DragonCrownProEnhanced.exe --diag [outfile] / --status <outfile>
+            //   DragonCrownProEnhanced.exe --reset-graphics / --reset-multiplayer
             var args = e.Args ?? Array.Empty<string>();
             if (args.Length > 0)
             {
@@ -53,6 +56,7 @@ namespace DragonCrownProEnhanced
                     {
                         string outFile = args.Length > 1 ? args[1] : Path.Combine(p.LogDir, "status.txt");
                         Directory.CreateDirectory(p.LogDir);
+                        var cp = p.CheatPatchStatus();
                         var lines = new[]
                         {
                             "ROOT=" + p.Root,
@@ -63,11 +67,16 @@ namespace DragonCrownProEnhanced
                             "VERSION=" + p.GameVersion(),
                             "PPU_HASH=" + p.PpuHash(),
                             "RPCS3_BUILD=" + p.Rpcs3Build(),
+                            "GRAPHICS_PRESET=" + p.GraphicsPreset,
+                            "RESOLUTION_PROFILE=" + p.ResolutionProfile,
+                            "ACTIVE_PROFILE=" + p.ActiveProfileName,
                             "RESHADE=" + p.ReShadeVersion() + " enabled=" + p.ReShadeEnabled + " silent=" + p.ReShadeSilent,
                             "RPCN_CONFIGURED=" + p.RpcnConfigured(),
-                            "CHEATS_OR_PATCHES=" + p.CheatsOrPatchesEnabled(),
+                            "RPCN_LOGIN=" + p.RpcnLoginStatus(),
+                            "CHEAT_ENTRIES=" + cp.CheatEntries + " CHEAT_ENABLED=" + cp.CheatEnabled,
+                            "PATCH_ENTRIES=" + cp.PatchEntries + " PATCH_ENABLED=" + cp.PatchEnabled,
                             "DISPLAY_MODE=" + p.DisplayMode + " vsync=" + p.VSync,
-                            "PROFILES=" + string.Join(",", new[] { "DC_PRO_4K", "DC_PRO_MAX_5K", "DC_NETPLAY", "DC_CHEAT_OFFLINE" }
+                            "PROFILES=" + string.Join(",", new[] { "DC_PRO_4K", "DC_PRO_MAX_5K", "DC_NETPLAY", "NETPLAY_SAFE", "DC_CHEAT_OFFLINE" }
                                         .Select(n => n + "=" + File.Exists(p.ProfilePath("Dragons_Crown/" + n)))),
                         };
                         File.WriteAllLines(outFile, lines);
@@ -84,9 +93,10 @@ namespace DragonCrownProEnhanced
                     }
                     case "--restore-window":
                     {
-                        var engine = new BorderlessEngine(p, 0);
-                        engine.Start();
-                        p.Log("cli --restore-window");
+                        // immediate restore from borderless_state.json - never starts a watcher,
+                        // and asks any live watcher to yield so the restore sticks
+                        new BorderlessEngine(p, 0).RequestStopAndRestore();
+                        p.Log("cli --restore-window (immediate restore + stop flag, no watcher)");
                         break;
                     }
                     case "--preset":
@@ -96,12 +106,19 @@ namespace DragonCrownProEnhanced
                         p.Log("cli --preset " + which);
                         break;
                     }
+                    case "--resolution":
+                    {
+                        string which = args.Length > 1 ? args[1] : "4K";
+                        p.SetResolution(which.Equals("5K", StringComparison.OrdinalIgnoreCase) ? Project.Res5K : Project.Res4K);
+                        p.Log("cli --resolution " + which + " -> " + p.ActiveProfileName);
+                        break;
+                    }
                     case "--diag":
                     {
                         string outFile = args.Length > 1 ? args[1] : Path.Combine(p.LogDir, "diagnostics.txt");
                         Directory.CreateDirectory(p.LogDir);
                         var items = p.RunDiagnostics();
-                        File.WriteAllLines(outFile, items.Select(i => (i.Ok ? "[OK]  " : "[NG]  ") + i.Name.PadRight(34) + i.Detail + (i.Hint.Length > 0 ? "  -> " + i.Hint : "")));
+                        File.WriteAllLines(outFile, items.Select(i => (i.Ok ? "[OK]  " : "[NG]  ") + i.Name.PadRight(38) + i.Detail + (i.Hint.Length > 0 ? "  -> " + i.Hint : "")));
                         p.Log("cli --diag -> " + outFile);
                         break;
                     }
@@ -127,36 +144,65 @@ namespace DragonCrownProEnhanced
                     {
                         string what = args.Length > 1 ? args[1].ToUpperInvariant() : "PLAY";
                         string profile;
-                        bool knownGood = false, borderless = true;
+                        bool knownGood = false, borderless = true, forceReShadeOff = false;
+                        bool skipPreflight = args.Any(x => x.Equals("--skip-preflight", StringComparison.OrdinalIgnoreCase));
+                        // RPCN / Netplay Safe preflight (same rules as the GUI)
+                        if (!skipPreflight && (what == "RPCNSAFE" || what == "NETPLAY"))
+                        {
+                            if (p.GameVersion() != Project.NetplayRequiredVersion)
+                                throw new Exception("RPCN Online requires Dragon's Crown BCAS20298 v" + Project.NetplayRequiredVersion +
+                                                    ". Detected: v" + p.GameVersion() + ". Apply the official update before continuing.");
+                            if (!p.RpcnConfigured())
+                                throw new Exception("RPCN account is not configured (RPCS3 → RPCN → Create Account).");
+                            bool? enabled = p.EnabledCheatsOrPatches();
+                            if (enabled == true) throw new Exception("Enabled cheat/patch detected. Disable all cheats/patches before netplay.");
+                            if (enabled == null) p.Log("preflight: cheat/patch enabled state UNKNOWN - verify in RPCS3");
+                        }
+                        else if (skipPreflight && (what == "RPCNSAFE" || what == "NETPLAY"))
+                        {
+                            p.Log("preflight skipped by --skip-preflight (automation only)");
+                        }
                         switch (what)
                         {
                             case "PROENHANCED":
                                 p.ApplyGraphicsPreset(Project.PresetProEnhanced);
-                                profile = "Dragons_Crown/DC_PRO_4K";
+                                profile = p.ActiveProfile;
                                 break;
                             case "STANDARD":
                                 p.ApplyGraphicsPreset(Project.PresetStandard);
-                                profile = "Dragons_Crown/DC_PRO_4K";
+                                profile = p.ActiveProfile;
                                 break;
-                            case "PROMAX": profile = "Dragons_Crown/DC_PRO_MAX_5K"; break;
+                            case "PROMAX":
+                                // legacy CLI behaviour: always the 400% profile
+                                profile = Project.Profile5K;
+                                break;
                             case "LOCAL":
-                            case "REMOTE": profile = "Dragons_Crown/DC_PRO_4K"; break;
-                            case "RPCNSAFE": profile = "Dragons_Crown/NETPLAY_SAFE"; break;
-                            case "NETPLAY": profile = "Dragons_Crown/DC_NETPLAY"; break;
+                            case "REMOTE":
+                                profile = p.ActiveProfile;
+                                break;
+                            case "RPCNSAFE":
+                                profile = Project.ProfileNetplaySafe;
+                                forceReShadeOff = true;
+                                break;
+                            case "NETPLAY":
+                                profile = Project.ProfileNetplay;
+                                break;
                             case "CHEAT":
-                                profile = "Dragons_Crown/DC_CHEAT_OFFLINE";
+                                profile = Project.ProfileCheat;
                                 p.BackupSaves("cheat_offline");
                                 break;
                             case "KNOWNGOOD":
-                                profile = "Dragons_Crown/DC_PRO_4K";
+                                profile = p.ActiveProfile;
                                 knownGood = true;
                                 break;
-                            default: profile = "Dragons_Crown/DC_PRO_4K"; break;
+                            default:
+                                profile = p.ActiveProfile;
+                                break;
                         }
                         p.ApplyReShadeSilent(p.ReShadeSilent);
-                        var proc = p.Launch(profile, knownGood, borderless);
+                        var proc = p.Launch(profile, knownGood, borderless, forceReShadeOff);
                         Console.WriteLine("PID=" + proc.Id);
-                        p.Log("cli --launch " + what + " -> PID " + proc.Id);
+                        p.Log("cli --launch " + what + " -> PID " + proc.Id + " (profile=" + profile + ", forcedReShadeOff=" + forceReShadeOff + ")");
                         // keep this process alive so the borderless watcher thread survives until the game ends
                         if (!args.Any(x => x.Equals("--no-wait", StringComparison.OrdinalIgnoreCase)))
                         {

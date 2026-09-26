@@ -18,11 +18,11 @@ namespace DragonCrownProEnhanced
         {
             InitializeComponent();
             _p = Project.Discover();
-            _p.Log("launcher start (root=" + _p.Root + ", preset=" + _p.GraphicsPreset + ")");
+            _p.Log("launcher start (root=" + _p.Root + ", preset=" + _p.GraphicsPreset + ", resolution=" + _p.ResolutionProfile + ")");
             try { _p.ApplyReShadeSilent(_p.ReShadeSilent); } catch { }
             RefreshStatus();
             TxtRoot.Text = "ROOT: " + _p.Root + "   ·   게임: " + (_p.GameExe ?? "(미탐지 — RPCS3 게임 목록에 등록 필요)");
-            Append("Dragon's Crown PC Edition 준비 완료 (Phase 1)");
+            Append("Dragon's Crown PC Edition (Phase 1 RC) 준비 완료");
         }
 
         // ------------------------------------------------------------- helpers
@@ -37,29 +37,47 @@ namespace DragonCrownProEnhanced
             string ck(bool ok) => ok ? "✓" : "✗";
             string dot(bool on) => on ? "●" : "○";
             string p1 = _p.ControllerHandler(1), p2 = _p.ControllerHandler(2);
+            var cp = _p.CheatPatchStatus();
+            string enabledState = cp.CheatEnabled == "YES" || cp.PatchEnabled == "YES" ? "Enabled!"
+                : (cp.CheatEnabled == "UNKNOWN" || cp.PatchEnabled == "UNKNOWN") ? "UNKNOWN" : "Disabled";
             TxtStatus.Text = string.Join(Environment.NewLine, new[]
             {
                 $"GAME      {ck(_p.GameExe != null && File.Exists(_p.GameExe))} Dragon's Crown [{_p.TitleId}]  v{_p.GameVersion()}",
                 $"RPCS3     {ck(File.Exists(_p.Rpcs3Exe))} Current ({_p.Rpcs3Build()})   KnownGood {ck(File.Exists(_p.KnownGoodExe))}",
                 $"FIRMWARE  {ck(_p.FirmwareVersion() != "미확인")} {_p.FirmwareVersion()}    PPU {_p.PpuHash()}",
-                $"GRAPHICS  {ck(true)} {_p.GraphicsPreset} · 4K 300% · AF 16x · MSAA Auto · Stretch Off",
+                $"GRAPHICS  {ck(true)} {_p.GraphicsSummary} · AF 16x · MSAA Auto · Stretch Off",
                 $"DISPLAY   {ck(true)} {_p.DisplayMode} · VSync {( _p.VSync ? "Full" : "Off")} · VBlank 60 · Frame Skip OFF",
-                $"RESHADE   {ck(_p.ReShadeVersion() != "없음")} {_p.ReShadeVersion()} · {( _p.ReShadeEnabled ? "ON (Pro Enhanced)" : "OFF (Standard)")} · Silent {(_p.ReShadeSilent ? "ON" : "OFF")}",
+                $"RESHADE   {ck(_p.ReShadeVersion() != "없음")} {_p.ReShadeVersion()} · {(_p.ReShadeEnabled ? "ON (Pro Enhanced)" : "OFF (Standard)")} · Silent {(_p.ReShadeSilent ? "ON" : "OFF")}",
                 $"PAD 1/2   {ck(p1 != "Null" && p1 != "없음")} {p1}  /  {ck(p2 != "Null" && p2 != "없음")} {p2}",
-                $"NETWORK   {dot(_p.RpcnConfigured())} RPCN {(_p.RpcnConfigured() ? "Configured" : "미설정")} · Sunshine {_p.SunshineStatus()}",
-                $"CHEATS    {dot(_p.CheatsOrPatchesEnabled())} {(_p.CheatsOrPatchesEnabled() ? "항목 있음" : "Disabled")}",
+                $"NETWORK   {dot(_p.RpcnConfigured())} RPCN Configured {(_p.RpcnConfigured() ? "YES" : "NO")} · Login {_p.RpcnLoginStatus()} · Sunshine {_p.SunshineStatus()}",
+                $"CHEATS    {dot(cp.CheatEnabled == "YES" || cp.PatchEnabled == "YES")} {enabledState} (cheats {cp.CheatEnabled} / patches {cp.PatchEnabled})",
             });
-            TxtStandardSub.Text = "4K 300% · AF 16x · ReShade 없음";
-            TxtProSub.Text = "4K 300% + ReShade (선명도/색감)";
+            string resShort = _p.ResolutionShort;
+            TxtStandardSub.Text = resShort + " · AF 16x · ReShade 없음";
+            TxtProSub.Text = resShort + " + ReShade (선명도/색감)";
         }
 
+        /// <summary>Preflight checks. RPCN / Netplay Safe enforce BCAS20298 v01.09 and clean runtime.</summary>
         private void Preflight(string profile, bool needNetplay = false, bool needSecondPad = false)
         {
             if (!File.Exists(_p.Rpcs3Exe)) throw new Exception("rpcs3.exe를 찾을 수 없습니다: " + _p.Rpcs3Exe);
             if (_p.GameExe == null || !File.Exists(_p.GameExe)) throw new Exception("게임 덤프를 찾을 수 없습니다. RPCS3 게임 목록에 Dragon's Crown을 추가하세요.");
-            if (!File.Exists(_p.ProfilePath(profile))) throw new Exception("프로필이 없습니다: " + profile + "\nTOOLS → Reset RPCS3 Settings 로 복원할 수 있습니다.");
-            if (needNetplay && !_p.RpcnConfigured()) throw new Exception("RPCN 계정이 설정되지 않았습니다.\nRPCS3 → RPCN → Create Account / Log In 후 다시 시도하세요.");
-            if (needNetplay && _p.CheatsOrPatchesEnabled()) throw new Exception("치트/패치 항목이 있습니다. NETPLAY 전에 모두 비활성화하세요.");
+            if (!File.Exists(_p.ProfilePath(profile))) throw new Exception("프로필이 없습니다: " + profile + "\nTOOLS → Backup/Restore 로 복원할 수 있습니다.");
+            if (needNetplay)
+            {
+                if (_p.GameVersion() != Project.NetplayRequiredVersion)
+                    throw new Exception(
+                        "RPCN Online requires Dragon's Crown BCAS20298 v" + Project.NetplayRequiredVersion + ".\n\n" +
+                        "Detected:\nBCAS20298 v" + _p.GameVersion() + "\n\n" +
+                        "Apply the official v" + Project.NetplayRequiredVersion + " update before continuing.");
+                if (!_p.RpcnConfigured())
+                    throw new Exception("RPCN 계정이 설정되지 않았습니다.\nRPCS3 → RPCN → Create Account / Log In 후 다시 시도하세요.");
+                bool? enabled = _p.EnabledCheatsOrPatches();
+                if (enabled == true)
+                    throw new Exception("활성화된 치트/패치가 있습니다. NETPLAY 전에 모두 비활성화하세요.");
+                if (enabled == null)
+                    Append("주의: 치트/패치 활성화 여부를 자동 판별할 수 없습니다 (UNKNOWN). RPCS3에서 직접 확인하세요.");
+            }
             if (needSecondPad)
             {
                 string p2 = _p.ControllerHandler(2);
@@ -68,15 +86,16 @@ namespace DragonCrownProEnhanced
             }
         }
 
-        private void Launch(string profile, string label, bool knownGood = false, bool borderless = true)
+        private void Launch(string profile, string label, bool knownGood = false, bool borderless = true, bool forceReShadeOff = false)
         {
             try
             {
                 if (_game != null && !_game.HasExited) { Append("이미 게임이 실행 중입니다."); return; }
                 _p.SaveSettings();
-                var proc = _p.Launch(profile, knownGood, borderless);
+                var proc = _p.Launch(profile, knownGood, borderless, forceReShadeOff);
                 _game = proc;
-                Append($"{label}: RPCS3 PID {proc.Id} · {profile} · {_p.DisplayMode} · {_p.GraphicsPreset}");
+                Append($"{label}: RPCS3 PID {proc.Id} · {profile} · {_p.DisplayMode} · {_p.GraphicsSummary}" +
+                       (forceReShadeOff ? " · ReShade 강제 OFF (runtime)" : ""));
                 if (borderless && _p.DisplayMode == "Borderless4K")
                     Append("게임 창이 뜨면 자동으로 테두리 없이 모니터 전체로 전환됩니다 (종료 시 원복).");
                 proc.EnableRaisingEvents = true;
@@ -84,6 +103,7 @@ namespace DragonCrownProEnhanced
                 {
                     Append($"{label}: 게임 종료 (exit {proc.ExitCode})");
                     _p.Log($"game exit code={proc.ExitCode}");
+                    if (forceReShadeOff) Append("Netplay Safe 종료: 사용자 그래픽 설정은 변경되지 않았습니다 (" + _p.GraphicsSummary + ").");
                     RefreshStatus();
                 });
                 RefreshStatus();
@@ -100,10 +120,10 @@ namespace DragonCrownProEnhanced
         {
             try
             {
-                Preflight(Project.Profile4K);
+                Preflight(_p.ActiveProfile);
                 _p.ApplyGraphicsPreset(Project.PresetStandard);
-                Append("Graphics A (Standard): RPCS3 자체 화질 · AF 16x · ReShade OFF");
-                Launch(Project.Profile4K, "PLAY · Standard");
+                Append("Graphics A (Standard): RPCS3 자체 화질 · AF 16x · ReShade OFF · " + _p.ResolutionShort);
+                Launch(_p.ActiveProfile, "PLAY · Standard");
             }
             catch (Exception ex) { Append("PLAY: " + ex.Message); MessageBox.Show(ex.Message, "PLAY · Standard", MessageBoxButton.OK, MessageBoxImage.Warning); }
         }
@@ -112,10 +132,10 @@ namespace DragonCrownProEnhanced
         {
             try
             {
-                Preflight(Project.Profile4K);
+                Preflight(_p.ActiveProfile);
                 _p.ApplyGraphicsPreset(Project.PresetProEnhanced);
-                Append("Graphics B (Pro Enhanced): ReShade ON (Deband + CAS + Levels + Vibrance + SMAA, Silent)");
-                Launch(Project.Profile4K, "PLAY · Pro Enhanced");
+                Append("Graphics B (Pro Enhanced): ReShade ON (Deband + CAS + Levels + Vibrance + SMAA, Silent) · " + _p.ResolutionShort);
+                Launch(_p.ActiveProfile, "PLAY · Pro Enhanced");
             }
             catch (Exception ex) { Append("PLAY: " + ex.Message); MessageBox.Show(ex.Message, "PLAY · Pro Enhanced", MessageBoxButton.OK, MessageBoxImage.Warning); }
         }
@@ -123,10 +143,11 @@ namespace DragonCrownProEnhanced
         // ------------------------------------------------------------- MULTIPLAYER
         private void BtnLocal_Click(object sender, RoutedEventArgs e)
         {
-            var w = MakePanel("MULTIPLAYER — Local (1P / 2P 같은 PC)", 420);
+            var w = MakePanel("MULTIPLAYER — Local (1P / 2P 같은 PC)", 440);
             var panel = new StackPanel { Margin = new Thickness(14) };
             panel.Children.Add(Info(
-                "한 PC에서 2인 플레이 (게임의 로컬 협동)\n\n" +
+                "한 PC에서 2인 플레이 (게임의 로컬 협동)\n" +
+                "Status: IMPLEMENTED / HARDWARE TEST PENDING (2P 패드 필요)\n\n" +
                 "1) 2P 패드를 PC에 연결하고 RPCS3 → 게임패드 설정에서 Player 2 핸들러를 지정하세요.\n" +
                 "2) 게임에서 캐릭터 선택 화면 또는 Tavern(주점)에서 2P 패드의 Start 를 누르면 합류합니다.\n" +
                 "3) 로컬 협동은 트로피/세이브가 Player 1 기준으로 기록됩니다.\n\n" +
@@ -136,10 +157,10 @@ namespace DragonCrownProEnhanced
                 Process.Start(new ProcessStartInfo(_p.Rpcs3Exe) { WorkingDirectory = _p.Rpcs3Dir, UseShellExecute = true });
                 Append("RPCS3 GUI → 게임패드 아이콘에서 1P/2P 를 설정하세요.");
             }));
-            panel.Children.Add(PanelButton("Local 2P 로 실행 (4K)", () =>
+            panel.Children.Add(PanelButton("Local 2P 로 실행 (" + _p.ResolutionShort + ")", () =>
             {
-                Preflight(Project.Profile4K, false, true);
-                Launch(Project.Profile4K, "Local 2P");
+                Preflight(_p.ActiveProfile, false, true);
+                Launch(_p.ActiveProfile, "Local 2P");
                 w.Close();
             }));
             w.Content = panel;
@@ -150,13 +171,15 @@ namespace DragonCrownProEnhanced
         {
             string sun = _p.SunshineStatus();
             string p2 = _p.ControllerHandler(2);
-            var w = MakePanel("MULTIPLAYER — Remote Co-op (Sunshine + Moonlight)", 520);
+            var w = MakePanel("MULTIPLAYER — Remote Co-op (Sunshine + Moonlight)", 540);
             var panel = new StackPanel { Margin = new Thickness(14) };
             panel.Children.Add(Info(
                 "한 PC에서 로컬 2P를 실행하고, 친구가 원격으로 2P 패드를 조작합니다.\n" +
-                "(RPCN/PSN 불필요 · 같은 세션 · 그래픽 MOD와 충돌 가능성 낮음)\n\n" +
+                "(RPCN/PSN 불필요 · 같은 세션 · 그래픽 MOD와 충돌 가능성 낮음)\n" +
+                "Status: IMPLEMENTED / HARDWARE TEST PENDING (Sunshine + 친구 PC 필요)\n\n" +
                 "· 게임 실행 PC = HOST, 친구 패드 = HOST의 2P 입력\n" +
-                "· 친구는 자기 RPCS3 세이브/캐릭터를 쓰는 구조가 아닙니다(문서 참고).\n\n" +
+                "· 친구는 자기 RPCS3 세이브/캐릭터를 쓰는 구조가 아닙니다(문서 참고).\n" +
+                "· Sunshine 은 권장 방법이며 Parsec 등 다른 원격 입력 방법도 사용할 수 있습니다.\n\n" +
                 "진단:\n" +
                 $"  Sunshine        : {sun}\n" +
                 $"  Controller 2    : {p2}\n" +
@@ -169,10 +192,17 @@ namespace DragonCrownProEnhanced
             panel.Children.Add(PanelButton("Sunshine 다운로드 페이지 열기", () =>
                 Process.Start(new ProcessStartInfo("https://github.com/LizardByte/Sunshine") { UseShellExecute = true })));
             panel.Children.Add(PanelButton("진단 다시 실행", () => { RefreshStatus(); MessageBox.Show("Sunshine: " + _p.SunshineStatus() + "\n2P: " + _p.ControllerHandler(2)); }));
-            panel.Children.Add(PanelButton("Remote Co-op 으로 실행 (4K)", () =>
+            panel.Children.Add(PanelButton("Remote Co-op 으로 실행 (" + _p.ResolutionShort + ")", () =>
             {
-                Preflight(Project.Profile4K, false, true);
-                Launch(Project.Profile4K, "Remote Co-op");
+                Preflight(_p.ActiveProfile, false, true);
+                if (!_p.SunshineRunning())
+                {
+                    var r = MessageBox.Show(
+                        "Sunshine is not running.\nRemote controller forwarding may not work.\n\nContinue anyway?",
+                        "Remote Co-op", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                    if (r != MessageBoxResult.Yes) return;
+                }
+                Launch(_p.ActiveProfile, "Remote Co-op");
                 w.Close();
             }));
             w.Content = panel;
@@ -181,29 +211,49 @@ namespace DragonCrownProEnhanced
 
         private void BtnRpcn_Click(object sender, RoutedEventArgs e)
         {
-            bool safe = false;
-            var w = MakePanel("MULTIPLAYER — RPCN Online", 520);
+            string ver = _p.GameVersion();
+            bool verOk = ver == Project.NetplayRequiredVersion;
+            bool configured = _p.RpcnConfigured();
+            var cp = _p.CheatPatchStatus();
+            string cheatState = cp.CheatEnabled == "YES" || cp.PatchEnabled == "YES" ? "✗ Enabled cheat/patch"
+                : (cp.CheatEnabled == "UNKNOWN" || cp.PatchEnabled == "UNKNOWN") ? "? UNKNOWN (check RPCS3)"
+                : "✓ No enabled cheats";
+            var w = MakePanel("MULTIPLAYER — RPCN Native Online", 620);
             var panel = new StackPanel { Margin = new Thickness(14) };
             panel.Children.Add(Info(
-                "각자 자기 RPCS3 + 게임 + 캐릭터 + 세이브 + 화면을 가진 상태로 온라인 플레이.\n\n" +
-                "READY 검사:\n" +
-                $"  RPCN configured : {(_p.RpcnConfigured() ? "✓" : "✗  (RPCS3 → RPCN → Create Account)")}\n" +
-                $"  Cheats/patches  : {(_p.CheatsOrPatchesEnabled() ? "✗ 항목 있음" : "✓ OFF")}\n" +
-                $"  Game version    : {_p.GameVersion()}   PPU {_p.PpuHash()}\n" +
-                $"  Sunshine(선택)  : {_p.SunshineStatus()}\n\n" +
-                "두 PC 모두 같은 TITLE_ID(BCAS20298) · 같은 APP_VER(01.09) 여야 합니다.\n" +
-                "첫 연결 테스트에서는 ReShade를 끄는 것을 권장합니다."));
-            var cbSafe = new CheckBox { Content = "Netplay Safe 프로필 사용 (실험/네트워크 영향 옵션 전부 OFF)", Margin = new Thickness(4, 8, 4, 4), IsChecked = false };
+                "RPCN Native Online\n" +
+                "Status: Partial / requires real 2-PC validation\n\n" +
+                "Game:\n" +
+                $"  {(verOk ? "✓" : "✗")} {_p.TitleId}\n" +
+                $"  {(verOk ? "✓" : "✗")} v{ver}" + (verOk ? "" : "  (v" + Project.NetplayRequiredVersion + " 필요 — RPCN 실행 차단)") + "\n\n" +
+                "RPCN:\n" +
+                $"  {(configured ? "✓" : "✗")} Configured\n" +
+                $"  ? Login status not verified (RPCS3 GUI에서 확인)\n\n" +
+                "Safety:\n" +
+                $"  {cheatState}\n" +
+                "  ✓ Netplay Safe available (기본 ON 권장)\n\n" +
+                "Compatibility:\n" +
+                "  PARTIAL — friend/direct stage join 권장\n" +
+                "  Random matchmaking 은 가정하지 않음\n" +
+                "  Connecting 에서 멈추는 사례 보고 있음 (Issue #15283)\n\n" +
+                "첫 테스트는 Standard + Netplay Safe + ReShade OFF + 유선 LAN + VPN OFF 를 권장합니다."));
+            var cbSafe = new CheckBox
+            {
+                Content = "Netplay Safe 사용 (Standard 강제 · ReShade runtime OFF · 실험/네트워크 옵션 보수값)",
+                Margin = new Thickness(4, 8, 4, 4),
+                IsChecked = true
+            };
             panel.Children.Add(cbSafe);
             panel.Children.Add(PanelButton("RPCS3 GUI 열기 (RPCN 설정)", () =>
                 Process.Start(new ProcessStartInfo(_p.Rpcs3Exe) { WorkingDirectory = _p.Rpcs3Dir, UseShellExecute = true })));
             panel.Children.Add(PanelButton("RPCN Online 실행", () =>
             {
-                safe = cbSafe.IsChecked == true;
+                bool safe = cbSafe.IsChecked == true;
                 string prof = safe ? Project.ProfileNetplaySafe : Project.ProfileNetplay;
                 Preflight(prof, true);
-                if (safe) Append("Netplay Safe 프로필 사용 (실험 설정 비활성)");
-                Launch(prof, safe ? "RPCN Online (Safe)" : "RPCN Online");
+                if (safe)
+                    Append("Netplay Safe: Standard 강제 + ReShade runtime OFF (사용자 설정은 변경되지 않음)");
+                Launch(prof, safe ? "RPCN Online (Safe)" : "RPCN Online", forceReShadeOff: safe);
                 w.Close();
             }));
             w.Content = panel;
@@ -213,42 +263,44 @@ namespace DragonCrownProEnhanced
         // ------------------------------------------------------------- SETTINGS
         private void BtnGraphics_Click(object sender, RoutedEventArgs e)
         {
-            var w = MakePanel("SETTINGS — Graphics", 560);
+            var w = MakePanel("SETTINGS — Graphics", 600);
             var panel = new StackPanel { Margin = new Thickness(14) };
             panel.Children.Add(new TextBlock { Text = "Graphics preset", FontWeight = FontWeights.Bold, Margin = new Thickness(4, 6, 4, 2) });
-            var presetBox = new ComboBox { Margin = new Thickness(4), Width = 260, HorizontalAlignment = HorizontalAlignment.Left };
+            var presetBox = new ComboBox { Margin = new Thickness(4), Width = 320, HorizontalAlignment = HorizontalAlignment.Left };
             presetBox.Items.Add("Standard (RPCS3 자체 화질 · ReShade 없음)");
             presetBox.Items.Add("Pro Enhanced (ReShade: Deband + CAS + Levels + Vibrance + SMAA)");
             presetBox.SelectedIndex = _p.GraphicsPreset == Project.PresetProEnhanced ? 1 : 0;
             panel.Children.Add(presetBox);
 
+            panel.Children.Add(new TextBlock { Text = "Resolution Scale", FontWeight = FontWeights.Bold, Margin = new Thickness(4, 10, 4, 2) });
+            var resBox = new ComboBox { Margin = new Thickness(4), Width = 320, HorizontalAlignment = HorizontalAlignment.Left };
+            resBox.Items.Add("4K / 300% — Recommended (DC_PRO_4K)");
+            resBox.Items.Add("5K / 400% — Super Sampling (DC_PRO_MAX_5K)");
+            resBox.SelectedIndex = _p.ResolutionProfile == Project.Res5K ? 1 : 0;
+            panel.Children.Add(resBox);
+
             panel.Children.Add(new TextBlock { Text = "Display Mode", FontWeight = FontWeights.Bold, Margin = new Thickness(4, 10, 4, 2) });
-            var modeBox = new ComboBox { Margin = new Thickness(4), Width = 260, HorizontalAlignment = HorizontalAlignment.Left };
+            var modeBox = new ComboBox { Margin = new Thickness(4), Width = 320, HorizontalAlignment = HorizontalAlignment.Left };
             foreach (var m in new[] { "Borderless4K", "Fullscreen", "Windowed" }) modeBox.Items.Add(m);
             modeBox.SelectedItem = _p.DisplayMode;
             panel.Children.Add(modeBox);
-
-            panel.Children.Add(new TextBlock { Text = "Resolution Scale (PRO)", FontWeight = FontWeights.Bold, Margin = new Thickness(4, 10, 4, 2) });
-            var resBox = new ComboBox { Margin = new Thickness(4), Width = 260, HorizontalAlignment = HorizontalAlignment.Left };
-            resBox.Items.Add("4K 300% (DC_PRO_4K)");
-            resBox.Items.Add("5K 400% (DC_PRO_MAX_5K)");
-            resBox.SelectedIndex = 0;
-            panel.Children.Add(resBox);
 
             var cbVsync = new CheckBox { Content = "VSync Full (권장)", IsChecked = _p.VSync, Margin = new Thickness(4, 10, 4, 2) };
             var cbSilent = new CheckBox { Content = "ReShade Silent (메뉴/OSD 숨김 · Home 으로 호출)", IsChecked = _p.ReShadeSilent, Margin = new Thickness(4, 4, 4, 2) };
             panel.Children.Add(cbVsync);
             panel.Children.Add(cbSilent);
             panel.Children.Add(Info("AF 16x · MSAA Auto · Stretch Off · 16:9 · VBlank 60 · Frame Skip OFF 는 고정입니다.\n" +
-                                    "UI 깨짐/글자 가독성/화면비는 이 값들로 유지됩니다."));
+                                    "Standard / Pro Enhanced 는 프로젝트 자체 프리셋 이름이며 PS4 리소스와 무관합니다.\n" +
+                                    "Netplay Safe 는 이 설정을 변경하지 않고 실행 시에만 ReShade 를 차단합니다."));
 
             panel.Children.Add(PanelButton("APPLY", () =>
             {
                 _p.DisplayMode = modeBox.SelectedItem.ToString();
                 _p.VSync = cbVsync.IsChecked == true;
                 _p.ReShadeSilent = cbSilent.IsChecked == true;
+                _p.SetResolution(resBox.SelectedIndex == 1 ? Project.Res5K : Project.Res4K);
                 _p.ApplyGraphicsPreset(presetBox.SelectedIndex == 1 ? Project.PresetProEnhanced : Project.PresetStandard);
-                Append($"GRAPHICS: preset={_p.GraphicsPreset} mode={_p.DisplayMode} vsync={_p.VSync} silent={_p.ReShadeSilent}");
+                Append($"GRAPHICS: preset={_p.GraphicsPreset} resolution={_p.ResolutionShort} mode={_p.DisplayMode} vsync={_p.VSync} silent={_p.ReShadeSilent}");
                 RefreshStatus();
                 w.Close();
             }));
@@ -258,7 +310,7 @@ namespace DragonCrownProEnhanced
 
         private void BtnController_Click(object sender, RoutedEventArgs e)
         {
-            var w = MakePanel("SETTINGS — Controller", 420);
+            var w = MakePanel("SETTINGS — Controller", 440);
             var panel = new StackPanel { Margin = new Thickness(14) };
             panel.Children.Add(Info("1P: " + _p.ControllerHandler(1) + "\n2P: " + _p.ControllerHandler(2) +
                 "\n\nLocal / Remote Co-op 에는 2P 패드 설정이 필요합니다.\nRPCS3 GUI → 게임패드 아이콘에서 Player 2 를 지정하세요.\n" +
@@ -274,7 +326,7 @@ namespace DragonCrownProEnhanced
 
         private void BtnNetwork_Click(object sender, RoutedEventArgs e)
         {
-            bool fwPriv = false, fwPub = false;
+            bool fw = false;
             try
             {
                 var psi = new ProcessStartInfo("powershell", "-NoProfile -Command \"(Get-NetFirewallRule -DisplayName 'RPCS3 (*' | Measure-Object).Count\"")
@@ -282,23 +334,29 @@ namespace DragonCrownProEnhanced
                 using var p = Process.Start(psi);
                 string o = p.StandardOutput.ReadToEnd().Trim();
                 int n = 0; int.TryParse(o, out n);
-                fwPriv = n > 0; fwPub = n > 0;
+                fw = n > 0;
             }
             catch { }
 
-            var w = MakePanel("SETTINGS — Network", 460);
+            var w = MakePanel("SETTINGS — Network", 480);
             var panel = new StackPanel { Margin = new Thickness(14) };
             panel.Children.Add(Info(
-                $"RPCN configuration : {(_p.RpcnConfigured() ? "✓ 설정됨 (RPCS3 관리)" : "✗ 미설정 — RPCS3 → RPCN → Create Account")}\n" +
-                $"Firewall rule      : {(fwPriv ? "✓ RPCS3 인바운드 허용 규칙 있음" : "✗ 규칙 없음 — Host 시 연결 실패 가능")}\n" +
-                $"Sunshine           : {_p.SunshineStatus()}\n\n" +
+                $"RPCN Configured : {(_p.RpcnConfigured() ? "YES" : "NO — RPCS3 → RPCN → Create Account")}\n" +
+                $"RPCN Login      : {_p.RpcnLoginStatus()}  (자동 검증 불가 — RPCS3 GUI 확인)\n" +
+                $"Firewall rule   : {(fw ? "✓ RPCS3 인바운드 허용 규칙 있음" : "✗ 규칙 없음 — Host 시 연결 실패 가능")}\n" +
+                $"Sunshine        : {_p.SunshineStatus()} (Remote Co-op 권장, 필수 아님)\n\n" +
                 "권장:\n" +
                 "· 유선 LAN만 사용(Wi-Fi 비활성) — 이중 NIC 환경에서 소스 인터페이스 혼선 방지\n" +
                 "· VPN(NordVPN 등) 완전 종료 — split tunneling 충돌 사례 있음\n" +
                 "· UPNP Off 유지, 공유기에서 필요 시 UDP 3658 포워딩\n" +
-                "· RPCN 서버: np.rpcs3.net:31313"));
+                "· RPCN 서버: np.rpcs3.net:31313\n\n" +
+                "RPCN 실패 시 순서: Netplay Safe → 네트워크 점검 → local RPCN 진단 → Remote Co-op (문서 참고)"));
             panel.Children.Add(PanelButton("방화벽 규칙 추가/확인 (관리자 필요)", () =>
-                Process.Start(new ProcessStartInfo("cmd.exe", "/c \"E:\\PS3\\Tools\\firewall_rpcs3_allow.cmd\"") { UseShellExecute = true })));
+            {
+                string script = _p.FirewallScript;
+                if (!File.Exists(script)) { MessageBox.Show("스크립트가 없습니다: " + script); return; }
+                Process.Start(new ProcessStartInfo("cmd.exe", "/c \"" + script + "\"") { UseShellExecute = true });
+            }));
             panel.Children.Add(PanelButton("RPCS3 GUI 열기 (RPCN 설정)", () =>
                 Process.Start(new ProcessStartInfo(_p.Rpcs3Exe) { WorkingDirectory = _p.Rpcs3Dir, UseShellExecute = true })));
             panel.Children.Add(PanelButton("네트워크 진단 (RPCN 서버 도달성)", () =>
@@ -315,7 +373,7 @@ namespace DragonCrownProEnhanced
 
         private void BtnAdvanced_Click(object sender, RoutedEventArgs e)
         {
-            var w = MakePanel("SETTINGS — Advanced", 520);
+            var w = MakePanel("SETTINGS — Advanced", 560);
             var panel = new StackPanel { Margin = new Thickness(14) };
             panel.Children.Add(Info(
                 "ROOT           : " + _p.Root + "\n" +
@@ -324,6 +382,7 @@ namespace DragonCrownProEnhanced
                 "Game           : " + (_p.GameDir ?? "(미탐지)") + "\n" +
                 "TITLE ID / VER : " + _p.TitleId + " / " + _p.GameVersion() + "\n" +
                 "PPU HASH       : " + _p.PpuHash() + "\n" +
+                "Graphics       : " + _p.GraphicsSummary + "  (profile=" + _p.ActiveProfileName + ")\n" +
                 "ReShade        : " + _p.ReShadeVersion() + " · preset=" + _p.GraphicsPreset + " · silent=" + _p.ReShadeSilent + "\n" +
                 "Profiles       : " + _p.ProfilesDir + "\n" +
                 "Runtime configs: " + _p.RuntimeDir));
@@ -339,7 +398,7 @@ namespace DragonCrownProEnhanced
         private void BtnDiagnostics_Click(object sender, RoutedEventArgs e)
         {
             var items = _p.RunDiagnostics();
-            var w = MakePanel("TOOLS — Diagnostics", 560);
+            var w = MakePanel("TOOLS — Diagnostics", 600);
             var panel = new StackPanel { Margin = new Thickness(14) };
             var text = new TextBlock
             {
@@ -347,14 +406,14 @@ namespace DragonCrownProEnhanced
                 FontSize = 12,
                 TextWrapping = TextWrapping.Wrap,
                 Text = string.Join(Environment.NewLine, items.Select(i =>
-                    (i.Ok ? "✓ " : "✗ ") + i.Name.PadRight(34) + i.Detail + (i.Ok || i.Hint.Length == 0 ? "" : Environment.NewLine + "     → " + i.Hint)))
+                    (i.Ok ? "✓ " : "✗ ") + i.Name.PadRight(38) + i.Detail + (i.Ok || i.Hint.Length == 0 ? "" : Environment.NewLine + "     → " + i.Hint)))
             };
-            panel.Children.Add(new ScrollViewer { Content = text, Height = 360, VerticalScrollBarVisibility = ScrollBarVisibility.Auto });
+            panel.Children.Add(new ScrollViewer { Content = text, Height = 380, VerticalScrollBarVisibility = ScrollBarVisibility.Auto });
             panel.Children.Add(PanelButton("진단 결과를 Logs\\diagnostics.txt 로 저장", () =>
             {
                 string outFile = Path.Combine(_p.LogDir, "diagnostics.txt");
                 Directory.CreateDirectory(_p.LogDir);
-                File.WriteAllLines(outFile, items.Select(i => (i.Ok ? "[OK]  " : "[NG]  ") + i.Name.PadRight(34) + i.Detail + (i.Hint.Length > 0 ? "  -> " + i.Hint : "")));
+                File.WriteAllLines(outFile, items.Select(i => (i.Ok ? "[OK]  " : "[NG]  ") + i.Name.PadRight(38) + i.Detail + (i.Hint.Length > 0 ? "  -> " + i.Hint : "")));
                 MessageBox.Show("저장됨: " + outFile);
             }));
             panel.Children.Add(PanelButton("닫기", () => w.Close()));
@@ -367,26 +426,28 @@ namespace DragonCrownProEnhanced
         {
             var r = MessageBox.Show(
                 "RPCS3 설정을 기본값으로 되돌립니다.\n\n" +
-                "· 그래픽: AF 16x · MSAA Auto · Stretch Off · 16:9 · VSync Full · VBlank 60 · Frame Skip OFF\n" +
+                "· 그래픽: 4K 300% · AF 16x · MSAA Auto · Stretch Off · 16:9 · VSync Full · VBlank 60 · Frame Skip OFF\n" +
                 "· 멀티플레이: RPCN On · UPNP Off · Clans Off · Bind 0.0.0.0\n" +
                 "· 그래픽 프리셋: Standard\n\n" +
-                "세이브/트로피는 절대 건드리지 않습니다. 계속할까요?",
+                "Live savedata 와 trophy 는 Reset 대상이 아닙니다 (변경/삭제되지 않음).\n" +
+                "자동 백업 사본(AutoBackup)은 최신 " + Project.SaveBackupRetention + "세대만 보존됩니다.\n\n계속할까요?",
                 "Reset RPCS3 Settings", MessageBoxButton.OKCancel, MessageBoxImage.Warning);
             if (r != MessageBoxResult.OK) return;
             string backup = _p.BackupSettings("before_reset");
             Append("설정 백업: " + Path.GetFileName(backup));
             _p.ResetGraphics();
             _p.ResetMultiplayer();
-            Append("Reset 완료 (그래픽/멀티플레이 기본값). 세이브는 변경되지 않았습니다.");
+            Append("Reset 완료 (그래픽/멀티플레이 기본값). Live savedata/trophy 는 변경되지 않았습니다.");
             RefreshStatus();
         }
 
         private void BtnBackup_Click(object sender, RoutedEventArgs e)
         {
-            var w = MakePanel("TOOLS — Backup / Restore (설정)", 500);
+            var w = MakePanel("TOOLS — Backup / Restore (설정)", 540);
             var panel = new StackPanel { Margin = new Thickness(14) };
             panel.Children.Add(Info("RPCS3 config · custom config · ReShade.ini · CurrentSettings.ini · 프로필 · 입력설정을 백업/복원합니다.\n" +
-                                     "세이브/트로피는 이 기능의 대상이 아니며 삭제되지 않습니다.\n(세이브 백업은 CHEAT OFFLINE 실행 시 자동 + SAVES 메뉴)"));
+                                     "Live savedata/trophy 는 이 기능의 대상이 아니며 변경/삭제되지 않습니다.\n" +
+                                     "(세이브 백업은 CHEAT OFFLINE 실행 시 자동 생성되며, AutoBackup 사본은 최신 " + Project.SaveBackupRetention + "세대 보존)"));
             var list = new ListBox { Height = 220, Margin = new Thickness(4) };
             void Reload()
             {
@@ -406,26 +467,26 @@ namespace DragonCrownProEnhanced
             {
                 var backups = _p.ListSettingsBackups();
                 if (list.SelectedIndex < 0 || list.SelectedIndex >= backups.Count) return;
-                if (MessageBox.Show("선택한 백업으로 설정을 복원할까요?\n복원 전 현재 설정도 자동 백업됩니다.", "Restore", MessageBoxButton.OKCancel) != MessageBoxResult.OK) return;
+                if (MessageBox.Show("선택한 백업으로 설정을 복원할까요?\n복원 전 현재 설정도 자동 백업됩니다.\n(프로젝트 ROOT 밖으로 나가는 경로는 건너뜁니다)", "Restore", MessageBoxButton.OKCancel) != MessageBoxResult.OK) return;
                 _p.BackupSettings("before_restore");
                 _p.RestoreSettingsBackup(backups[list.SelectedIndex]);
-                MessageBox.Show("복원 완료. 세이브는 변경되지 않았습니다.");
+                MessageBox.Show("복원 완료. Live savedata/trophy 는 변경되지 않았습니다.");
                 RefreshStatus();
             }));
-            panel.Children.Add(PanelButton("SAVES 폴더 열기 (세이브 백업/복원)", () => OpenPath(_p.SavesDir)));
+            panel.Children.Add(PanelButton("SAVES 폴더 열기 (세이브 백업)", () => OpenPath(_p.SavesDir)));
             w.Content = panel;
             w.ShowDialog();
         }
 
         private void BtnMaint_Click(object sender, RoutedEventArgs e)
         {
-            var w = MakePanel("TOOLS — KnownGood / Logs", 460);
+            var w = MakePanel("TOOLS — KnownGood / Logs", 500);
             var panel = new StackPanel { Margin = new Thickness(14) };
             panel.Children.Add(Info("KnownGood = 검증 완료된 RPCS3 fallback 스냅샷.\n업데이트 직후에는 삭제하지 말고, 문제가 생기면 여기서 실행하세요."));
-            panel.Children.Add(PanelButton("KNOWN GOOD RPCS3 실행 (fallback)", () =>
+            panel.Children.Add(PanelButton("KNOWN GOOD RPCS3 실행 (fallback · " + _p.ResolutionShort + ")", () =>
             {
                 if (!File.Exists(_p.KnownGoodExe)) { MessageBox.Show("KnownGood 스냅샷이 없습니다."); return; }
-                Launch(Project.Profile4K, "KNOWN GOOD", knownGood: true);
+                Launch(_p.ActiveProfile, "KNOWN GOOD", knownGood: true);
                 w.Close();
             }));
             panel.Children.Add(PanelButton("세이브 동기화 (Current → KnownGood)", () =>
@@ -448,8 +509,8 @@ namespace DragonCrownProEnhanced
             }));
             panel.Children.Add(PanelButton("창 스타일 복원 (Borderless 해제)", () =>
             {
-                new BorderlessEngine(_p, 0).RestoreNow();
-                MessageBox.Show("게임 창이 실행 중이면 원래 창 스타일로 복원했습니다.");
+                new BorderlessEngine(_p, 0).RequestStopAndRestore();
+                MessageBox.Show("게임 창이 실행 중이면 원래 창 스타일로 복원했습니다.\n(다음 실행 시 Borderless가 다시 적용됩니다)");
             }));
             panel.Children.Add(PanelButton("LOGS 폴더 열기", () => OpenPath(_p.LogDir)));
             panel.Children.Add(PanelButton("BACKUPS 폴더 열기", () => OpenPath(_p.BackupDir)));
@@ -463,7 +524,7 @@ namespace DragonCrownProEnhanced
             return new Window
             {
                 Title = title,
-                Width = 620,
+                Width = 640,
                 Height = height,
                 Owner = Application.Current.MainWindow,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
