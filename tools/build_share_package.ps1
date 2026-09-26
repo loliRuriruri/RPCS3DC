@@ -190,6 +190,11 @@ Dragon's Crown PC Edition (Phase 1 RC) — 설치 가이드
      - 검증 기준 빌드: v0.0.42-20053 (다른 빌드도 대체로 동작하나 재검증 필요)
   3. RPCS3 실행 → PS3 firmware(4.93 권장) 설치 → 본인 게임 덤프 등록
      → 게임 우클릭 → Check for updates (v1.09 권장)
+     ※ 게임 경로를 찾지 못하면:
+        - 런처 오류 창에서 [예] 게임 폴더 선택 → 게임의 Disc root(또는 PS3_GAME) 지정
+        - 또는 RPCS3 에서 Add Games 후 런처의 [RPCS3 상태 새로고침] (런처 재실행 불필요)
+        - <ROOT>\Games\... 아래에 게임을 두면 자동 탐지됩니다
+        (자세한 내용: Docs\TROUBLESHOOTING.md)
   4. Launcher 실행: <ROOT>\Launcher\DragonCrownProEnhanced.exe
      - 게임 경로/루트는 자동 탐지합니다 (SETTINGS → Advanced 에서 확인 가능)
   5. (선택) ReShade: reshade.me 에서 6.8.0 Addon(Vulkan) 을 rpcs3.exe 대상 설치
