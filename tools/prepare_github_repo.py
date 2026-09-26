@@ -16,8 +16,38 @@ DST = r"E:\PS3\GitHub\RPCS3DC"
 INCLUDE_DIRS = {
     "Docs": ("docs", ("*.md",)),
     "Launchers": ("launcher", ("*.cmd", "*.ps1")),
+    "Launcher\\src": ("launcher/src", ("*.cs", "*.xaml", "*.csproj")),
     "Tools": ("tools", ("*.py", "*.ps1", "*.cmd")),
 }
+
+# single files copied to the repository root (scrubbed)
+ROOT_FILES = {
+    "README.md": "README.md",
+}
+
+GITIGNORE = """\
+# never publish third-party content / personal data
+RPCS3/
+Games/
+Saves/
+Cheats/
+Backups/
+Logs/
+Screenshots_AB/
+*.exe
+*.dll
+*.pdb
+*.pkg
+*.PUP
+*.7z
+*.zip
+*.dat
+*.iso
+rpcn.yml
+CurrentSettings.ini
+*.png
+*.jpg
+"""
 
 # files that must not be published (third-party content / personal data)
 EXCLUDE_NAMES = {
@@ -87,6 +117,20 @@ def main():
             copied += 1
 
     print(f"copied {copied} files -> {DST}")
+
+    # root-level files (README) + .gitignore
+    for src_name, dst_name in ROOT_FILES.items():
+        full = os.path.join(SRC, src_name)
+        if not os.path.isfile(full) or not wanted(full):
+            continue
+        with open(full, "r", encoding="utf-8", errors="replace") as f:
+            text = f.read()
+        with open(os.path.join(DST, dst_name), "w", encoding="utf-8", newline="\n") as f:
+            f.write(scrub(text))
+        print(f"  root: {dst_name}")
+    with open(os.path.join(DST, ".gitignore"), "w", encoding="utf-8", newline="\n") as f:
+        f.write(GITIGNORE)
+
     for root, dirs, files in os.walk(DST):
         if ".git" in root:
             continue
