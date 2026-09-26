@@ -158,6 +158,18 @@
 
 ---
 
+## 2026-09-26 — UI/UX 테마 + 앱 아이콘 (드래곤즈 크라운 무드)
+
+| # | 변경 | 위치 | 비고 |
+|---|---|---|---|
+| 135 | 앱 아이콘 | `Launcher\src\Assets\icon.ico` · `remote-coop\src\Assets\icon.ico` | 사용자 제공 이미지로 16~256 다중 크기 ICO 생성, 두 exe 에 `ApplicationIcon` 적용 |
+| 136 | UI 테마 (금장 프레임 · 양피지 · 다크 판타지) | 런처/Helper `App.xaml` | 팔레트(골드 #C9A24B / 크림슨 / 로열 퍼플 / 포레스트), Georgia 세리프 타이틀, 골드 테두리 패널, 버튼 hover 시 금빛 강조 |
+| 137 | 헤더/워터마크 | 런처/Helper `MainWindow.xaml` | 원형 아바타(히어로 이미지) + 금색 타이틀, 우하단에 낮은 투명도 워터마크 |
+| 138 | PLAY 강조 | 런처 | Standard = 크림슨(주요 액션), Pro Enhanced = 로열 퍼플, Remote = 포레스트, RPCN = 앰버 |
+| 139 | 에셋 재생성 도구 | `Tools\make_ui_assets.ps1` | 소스 PNG → icon.ico/hero.png/hero_small.png 재생성 (재현 가능) |
+| 140 | 레포 생성기 | `Tools\prepare_github_repo.py` | `Launcher\src`·`remote-coop\src` 의 `.ico/.png/.txt` 포함(바이너리는 스크럽 없이 바이트 복사) |
+
+참고: 공식 Dragon's Crown(Vanillaware/Atlus) 아트워크는 사용하지 않았습니다(오리지널 테마 + 사용자 제공 AI 생성 이미지).
 ## 2026-09-26 — Remote Co-op Helper v1.1 (FREE PATH + RPCS3 SETTINGS BRIDGE)
 
 | # | 변경 | 위치 | 비고 |

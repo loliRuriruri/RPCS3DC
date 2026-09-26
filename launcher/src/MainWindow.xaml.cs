@@ -690,8 +690,9 @@ namespace DragonCrownProEnhanced
                 Height = height,
                 Owner = Application.Current.MainWindow,
                 WindowStartupLocation = WindowStartupLocation.CenterOwner,
-                Background = new SolidColorBrush(Color.FromRgb(0x1E, 0x21, 0x26)),
-                Foreground = Brushes.Gainsboro,
+                Background = new SolidColorBrush(Color.FromRgb(0x14, 0x18, 0x1F)),
+                Foreground = new SolidColorBrush(Color.FromRgb(0xED, 0xE3, 0xCC)),
+                Icon = Application.Current.MainWindow?.Icon,
             };
         }
 

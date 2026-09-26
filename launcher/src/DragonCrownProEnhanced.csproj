@@ -18,7 +18,12 @@
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
     <SatelliteResourceLanguages>en;ko</SatelliteResourceLanguages>
-    <ApplicationIcon></ApplicationIcon>
+    <ApplicationIcon>Assets\icon.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\hero.png" />
+    <Resource Include="Assets\hero_small.png" />
+  </ItemGroup>
 
 </Project>

@@ -2,99 +2,120 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Dragon's Crown Remote Co-op Setup"
-        Height="860" Width="980" MinHeight="760" MinWidth="900"
-        Background="#1E2126" WindowStartupLocation="CenterScreen">
-  <Grid Margin="16">
-    <Grid.RowDefinitions>
-      <RowDefinition Height="Auto"/>
-      <RowDefinition Height="Auto"/>
-      <RowDefinition Height="*"/>
-      <RowDefinition Height="Auto"/>
-      <RowDefinition Height="130"/>
-    </Grid.RowDefinitions>
+        Height="880" Width="1000" MinHeight="780" MinWidth="920"
+        Background="#0B0D12" WindowStartupLocation="CenterScreen">
+  <Grid>
+    <Grid.Background>
+      <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#0B0D12" Offset="0"/>
+        <GradientStop Color="#131826" Offset="0.55"/>
+        <GradientStop Color="#090B0F" Offset="1"/>
+      </LinearGradientBrush>
+    </Grid.Background>
+    <Image Source="Assets/hero.png" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+           Width="560" Opacity="0.07" Stretch="Uniform" IsHitTestVisible="False" Margin="0,0,-60,-80"/>
 
-    <StackPanel Grid.Row="0">
-      <TextBlock Text="DRAGON'S CROWN" FontSize="28" FontWeight="Bold" Foreground="#F2C14E"/>
-      <TextBlock Text="REMOTE CO-OP SETUP" FontSize="18" FontWeight="SemiBold" Foreground="#CFD8E3" Margin="0,-4,0,2"/>
-      <TextBlock FontSize="12" Foreground="#8FA3B8"
-                 Text="HOST = 게임을 실행하는 PC (Sunshine + 가상패드 + RPCS3 Player 2) · GUEST = 친구 PC (Moonlight + 패드)"/>
-    </StackPanel>
+    <Grid Margin="16">
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="*"/>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="130"/>
+      </Grid.RowDefinitions>
 
-    <UniformGrid Grid.Row="1" Rows="1" Columns="2" Margin="0,10,0,6">
-      <Button x:Name="BtnRoleHost" Style="{StaticResource BigButton}" Click="BtnRoleHost_Click">
-        <StackPanel><TextBlock Text="HOST" HorizontalAlignment="Center" FontSize="17"/>
-          <TextBlock Text="게임을 실행하는 PC" FontSize="11" FontWeight="Normal" HorizontalAlignment="Center" Foreground="#BFD4EA"/></StackPanel>
-      </Button>
-      <Button x:Name="BtnRoleGuest" Style="{StaticResource BigButton}" Background="#2F5D50" Click="BtnRoleGuest_Click">
-        <StackPanel><TextBlock Text="GUEST" HorizontalAlignment="Center" FontSize="17"/>
-          <TextBlock Text="친구 PC (RPCS3 불필요)" FontSize="11" FontWeight="Normal" HorizontalAlignment="Center" Foreground="#B7DCCB"/></StackPanel>
-      </Button>
-    </UniformGrid>
-
-    <!-- HOST panel -->
-    <Border x:Name="PanelHost" Grid.Row="2" Background="#23262C" CornerRadius="6" Padding="12">
-      <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel>
-          <TextBlock Text="HOST — GAME PC" FontSize="14" FontWeight="Bold" Foreground="#F2C14E"/>
-          <TextBlock x:Name="TxtHostStatus" Style="{StaticResource StatusText}" Margin="2,8,2,2"/>
-          <TextBlock x:Name="TxtHostBackend" Style="{StaticResource StatusText}" Margin="2,8,2,2" Foreground="#BFD4EA"/>
-          <TextBlock x:Name="TxtHostSteps" Style="{StaticResource StatusText}" Margin="2,6,2,2" Foreground="#9FD3A0"/>
-          <CheckBox x:Name="CbControllerOnly" Content="Controller-only Mode (Recommended) — 친구의 키보드/마우스 입력 차단, gamepad=x360"
-                    Foreground="Silver" Margin="4,10,4,2" IsChecked="True"/>
-          <WrapPanel Margin="0,6,0,0">
-            <Button x:Name="BtnInstallHost" Style="{StaticResource SmallButton}" Content="INSTALL / REPAIR HOST" Click="BtnInstallHost_Click"/>
-            <Button x:Name="BtnStartSunshine" Style="{StaticResource SmallButton}" Content="START SUNSHINE" Click="BtnStartSunshine_Click"/>
-            <Button x:Name="BtnOpenSunshine" Style="{StaticResource SmallButton}" Content="OPEN SUNSHINE" Click="BtnOpenSunshine_Click"/>
-            <Button x:Name="BtnOpenWebUi" Style="{StaticResource SmallButton}" Content="OPEN SUNSHINE WEB UI" Click="BtnOpenWebUi_Click"/>
-            <Button x:Name="BtnTestPad" Style="{StaticResource SmallButton}" Content="TEST REMOTE PAD" Click="BtnTestPad_Click"/>
-            <Button x:Name="BtnSetP2" Style="{StaticResource SmallButton}" Content="SET P2 TO XINPUT" Click="BtnSetP2_Click"/>
-            <Button x:Name="BtnOpenPadSettings" Style="{StaticResource SmallButton}" Content="OPEN RPCS3 CONTROLLER SETTINGS" Click="BtnOpenPadSettings_Click"/>
-            <Button x:Name="BtnStartRemote" Style="{StaticResource SmallButton}" Background="#5D4A2F" Content="START REMOTE CO-OP" Click="BtnStartRemote_Click"/>
-            <Button x:Name="BtnViGEm" Style="{StaticResource SmallButton}" Content="INSTALL FREE GAMEPAD DRIVER (ViGEmBus)" Click="BtnViGEm_Click"/>
-            <Button x:Name="BtnRestoreSun" Style="{StaticResource SmallButton}" Content="RESTORE SUNSHINE CONFIG" Click="BtnRestoreSun_Click"/>
-            <Button x:Name="BtnRestoreP2" Style="{StaticResource SmallButton}" Content="RESTORE RPCS3 INPUT" Click="BtnRestoreP2_Click"/>
-            <Button x:Name="BtnOpenSunCfg" Style="{StaticResource SmallButton}" Content="OPEN SUNSHINE CONFIG FOLDER" Click="BtnOpenSunCfg_Click"/>
-            <Button x:Name="BtnRefreshHost" Style="{StaticResource SmallButton}" Content="REFRESH" Click="BtnRefreshHost_Click"/>
-          </WrapPanel>
-          <TextBlock x:Name="TxtViGEmNote" FontSize="11" Foreground="#C9A76A" Margin="4,8,4,0" TextWrapping="Wrap"
-                     Text="ViGEmBus 는 무료 legacy/EOL 드라이버입니다 (Xbox 360 에뮬레이션). Virtual HID Driver(유료)가 없을 때의 fallback 이며, 사용자가 직접 선택한 경우에만 설치합니다."/>
+      <!-- header -->
+      <StackPanel Grid.Row="0" Orientation="Horizontal">
+        <Border Width="58" Height="58" CornerRadius="29" BorderBrush="{StaticResource Gold}" BorderThickness="1" Margin="0,0,14,0">
+          <Border.Background>
+            <ImageBrush ImageSource="Assets/hero.png" Stretch="UniformToFill"/>
+          </Border.Background>
+        </Border>
+        <StackPanel VerticalAlignment="Center">
+          <TextBlock Text="DRAGON'S CROWN" Style="{StaticResource TitleText}"/>
+          <TextBlock Text="REMOTE CO-OP SETUP" Style="{StaticResource SubtitleText}"/>
+          <TextBlock FontSize="11.5" Foreground="{StaticResource ParchmentDim}"
+                     Text="HOST = 게임을 실행하는 PC (Sunshine + 가상패드 + RPCS3 Player 2) · GUEST = 친구 PC (Moonlight + 패드)"/>
         </StackPanel>
-      </ScrollViewer>
-    </Border>
+      </StackPanel>
 
-    <!-- GUEST panel -->
-    <Border x:Name="PanelGuest" Grid.Row="2" Background="#23262C" CornerRadius="6" Padding="12" Visibility="Collapsed">
-      <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel>
-          <TextBlock Text="GUEST — FRIEND PC" FontSize="14" FontWeight="Bold" Foreground="#7FD6B0"/>
-          <TextBlock Text="RPCS3 / PS3 펌웨어 / 게임 파일이 필요하지 않습니다. Moonlight + 패드 + 네트워크만 있으면 됩니다."
-                     FontSize="11.5" Foreground="#9FB3C8" Margin="2,4,2,2" TextWrapping="Wrap"/>
-          <TextBlock x:Name="TxtGuestStatus" Style="{StaticResource StatusText}" Margin="2,8,2,2"/>
-          <TextBlock x:Name="TxtGuestSteps" Style="{StaticResource StatusText}" Margin="2,6,2,2" Foreground="#9FD3A0"/>
-          <StackPanel Orientation="Horizontal" Margin="2,10,2,0">
-            <TextBlock Text="Host Address:" Foreground="Silver" VerticalAlignment="Center" Margin="2,0,8,0"/>
-            <TextBox x:Name="TxtHostAddress" Width="240" Height="26" Background="#15181C" Foreground="#D8E0E8" BorderThickness="0" Padding="6,4,6,4"/>
+      <!-- role selection -->
+      <UniformGrid Grid.Row="1" Rows="1" Columns="2" Margin="0,10,0,4">
+        <Button x:Name="BtnRoleHost" Style="{StaticResource BigButton}" Background="#5A2A2A" Click="BtnRoleHost_Click">
+          <StackPanel><TextBlock Text="HOST" HorizontalAlignment="Center" FontSize="17"/>
+            <TextBlock Text="게임을 실행하는 PC" FontSize="11" FontWeight="Normal" HorizontalAlignment="Center" Foreground="#E8C9A0"/></StackPanel>
+        </Button>
+        <Button x:Name="BtnRoleGuest" Style="{StaticResource BigButton}" Background="#22402F" Click="BtnRoleGuest_Click">
+          <StackPanel><TextBlock Text="GUEST" HorizontalAlignment="Center" FontSize="17"/>
+            <TextBlock Text="친구 PC (RPCS3 불필요)" FontSize="11" FontWeight="Normal" HorizontalAlignment="Center" Foreground="#A8CDB6"/></StackPanel>
+        </Button>
+      </UniformGrid>
+
+      <!-- HOST panel -->
+      <Border x:Name="PanelHost" Grid.Row="2" Style="{StaticResource PanelBorder}">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <StackPanel>
+            <TextBlock Text="HOST — GAME PC" Style="{StaticResource SectionTitle}"/>
+            <TextBlock x:Name="TxtHostStatus" Style="{StaticResource StatusText}" Margin="2,8,2,2"/>
+            <TextBlock x:Name="TxtHostBackend" Style="{StaticResource StatusText}" Margin="2,8,2,2" Foreground="#C9BB95"/>
+            <TextBlock x:Name="TxtHostSteps" Style="{StaticResource StatusText}" Margin="2,6,2,2" Foreground="#9FD3A0"/>
+            <CheckBox x:Name="CbControllerOnly" Style="{StaticResource Check}"
+                      Content="Controller-only Mode (Recommended) — 친구의 키보드/마우스 입력 차단, gamepad=x360" IsChecked="True"/>
+            <WrapPanel Margin="0,6,0,0">
+              <Button x:Name="BtnInstallHost" Style="{StaticResource SmallButton}" Content="INSTALL / REPAIR HOST" Click="BtnInstallHost_Click"/>
+              <Button x:Name="BtnStartSunshine" Style="{StaticResource SmallButton}" Content="START SUNSHINE" Click="BtnStartSunshine_Click"/>
+              <Button x:Name="BtnOpenSunshine" Style="{StaticResource SmallButton}" Content="OPEN SUNSHINE" Click="BtnOpenSunshine_Click"/>
+              <Button x:Name="BtnOpenWebUi" Style="{StaticResource SmallButton}" Content="OPEN SUNSHINE WEB UI" Click="BtnOpenWebUi_Click"/>
+              <Button x:Name="BtnTestPad" Style="{StaticResource SmallButton}" Content="TEST REMOTE PAD" Click="BtnTestPad_Click"/>
+              <Button x:Name="BtnSetP2" Style="{StaticResource SmallButton}" Content="SET P2 TO XINPUT" Click="BtnSetP2_Click"/>
+              <Button x:Name="BtnOpenPadSettings" Style="{StaticResource SmallButton}" Content="OPEN RPCS3 CONTROLLER SETTINGS" Click="BtnOpenPadSettings_Click"/>
+              <Button x:Name="BtnStartRemote" Style="{StaticResource SmallButton}" Background="#5A2A2A" Content="START REMOTE CO-OP" Click="BtnStartRemote_Click"/>
+              <Button x:Name="BtnViGEm" Style="{StaticResource SmallButton}" Background="#22402F" Content="INSTALL FREE GAMEPAD DRIVER (ViGEmBus)" Click="BtnViGEm_Click"/>
+              <Button x:Name="BtnRestoreSun" Style="{StaticResource SmallButton}" Content="RESTORE SUNSHINE CONFIG" Click="BtnRestoreSun_Click"/>
+              <Button x:Name="BtnRestoreP2" Style="{StaticResource SmallButton}" Content="RESTORE RPCS3 INPUT" Click="BtnRestoreP2_Click"/>
+              <Button x:Name="BtnOpenSunCfg" Style="{StaticResource SmallButton}" Content="OPEN SUNSHINE CONFIG FOLDER" Click="BtnOpenSunCfg_Click"/>
+              <Button x:Name="BtnRefreshHost" Style="{StaticResource SmallButton}" Content="REFRESH" Click="BtnRefreshHost_Click"/>
+            </WrapPanel>
+            <TextBlock x:Name="TxtViGEmNote" FontSize="11" Foreground="#C9A76A" Margin="4,8,4,0" TextWrapping="Wrap"
+                       Text="ViGEmBus 는 무료 legacy/EOL 드라이버입니다 (Xbox 360 에뮬레이션). Virtual HID Driver(유료)가 없을 때의 fallback 이며, 사용자가 직접 선택한 경우에만 설치합니다."/>
           </StackPanel>
-          <WrapPanel Margin="0,6,0,0">
-            <Button x:Name="BtnInstallGuest" Style="{StaticResource SmallButton}" Content="INSTALL MOONLIGHT" Click="BtnInstallGuest_Click"/>
-            <Button x:Name="BtnTestController" Style="{StaticResource SmallButton}" Content="TEST CONTROLLER" Click="BtnTestController_Click"/>
-            <Button x:Name="BtnPairHost" Style="{StaticResource SmallButton}" Content="ADD / PAIR HOST" Click="BtnPairHost_Click"/>
-            <Button x:Name="BtnStreamDesktop" Style="{StaticResource SmallButton}" Content="START DESKTOP STREAM" Click="BtnStreamDesktop_Click"/>
-            <Button x:Name="BtnOpenMoonlight" Style="{StaticResource SmallButton}" Content="OPEN MOONLIGHT" Click="BtnOpenMoonlight_Click"/>
-            <Button x:Name="BtnOpenJoyCpl" Style="{StaticResource SmallButton}" Content="OPEN WINDOWS GAME CONTROLLERS" Click="BtnOpenJoyCpl_Click"/>
-            <Button x:Name="BtnRefreshGuest" Style="{StaticResource SmallButton}" Content="REFRESH" Click="BtnRefreshGuest_Click"/>
-          </WrapPanel>
-          <TextBlock FontSize="11" Foreground="#8FA3B8" Margin="4,10,4,0" TextWrapping="Wrap"
-                     Text="권장 스트림 설정: 1080p / 60 FPS / Codec Auto / low latency 우선 (Remote Co-op 은 화질보다 지연이 중요합니다). v1 은 Desktop 스트림을 사용합니다."/>
-        </StackPanel>
-      </ScrollViewer>
-    </Border>
+        </ScrollViewer>
+      </Border>
 
-    <TextBlock Grid.Row="3" x:Name="TxtRoot" FontSize="11" Foreground="#6E7B8A" Margin="6,6,0,4"/>
+      <!-- GUEST panel -->
+      <Border x:Name="PanelGuest" Grid.Row="2" Style="{StaticResource PanelBorder}" Visibility="Collapsed">
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+          <StackPanel>
+            <TextBlock Text="GUEST — FRIEND PC" Style="{StaticResource SectionTitle}"/>
+            <TextBlock Text="RPCS3 / PS3 펌웨어 / 게임 파일이 필요하지 않습니다. Moonlight + 패드 + 네트워크만 있으면 됩니다."
+                       FontSize="11.5" Foreground="{StaticResource ParchmentDim}" Margin="2,4,2,2" TextWrapping="Wrap"/>
+            <TextBlock x:Name="TxtGuestStatus" Style="{StaticResource StatusText}" Margin="2,8,2,2"/>
+            <TextBlock x:Name="TxtGuestSteps" Style="{StaticResource StatusText}" Margin="2,6,2,2" Foreground="#9FD3A0"/>
+            <StackPanel Orientation="Horizontal" Margin="2,10,2,0">
+              <TextBlock Text="Host Address:" Foreground="{StaticResource ParchmentDim}" VerticalAlignment="Center" Margin="2,0,8,0"/>
+              <TextBox x:Name="TxtHostAddress" Width="240" Height="26" Background="#0F131A" Foreground="#EDE3CC"
+                       BorderBrush="#6E5A2E" BorderThickness="1" Padding="6,4,6,4"/>
+            </StackPanel>
+            <WrapPanel Margin="0,6,0,0">
+              <Button x:Name="BtnInstallGuest" Style="{StaticResource SmallButton}" Background="#22402F" Content="INSTALL MOONLIGHT" Click="BtnInstallGuest_Click"/>
+              <Button x:Name="BtnTestController" Style="{StaticResource SmallButton}" Content="TEST CONTROLLER" Click="BtnTestController_Click"/>
+              <Button x:Name="BtnPairHost" Style="{StaticResource SmallButton}" Content="ADD / PAIR HOST" Click="BtnPairHost_Click"/>
+              <Button x:Name="BtnStreamDesktop" Style="{StaticResource SmallButton}" Content="START DESKTOP STREAM" Click="BtnStreamDesktop_Click"/>
+              <Button x:Name="BtnOpenMoonlight" Style="{StaticResource SmallButton}" Content="OPEN MOONLIGHT" Click="BtnOpenMoonlight_Click"/>
+              <Button x:Name="BtnOpenJoyCpl" Style="{StaticResource SmallButton}" Content="OPEN WINDOWS GAME CONTROLLERS" Click="BtnOpenJoyCpl_Click"/>
+              <Button x:Name="BtnRefreshGuest" Style="{StaticResource SmallButton}" Content="REFRESH" Click="BtnRefreshGuest_Click"/>
+            </WrapPanel>
+            <TextBlock FontSize="11" Foreground="{StaticResource ParchmentDim}" Margin="4,10,4,0" TextWrapping="Wrap"
+                       Text="권장 스트림 설정: 1080p / 60 FPS / Codec Auto / low latency 우선 (Remote Co-op 은 화질보다 지연이 중요합니다). v1 은 Desktop 스트림을 사용합니다."/>
+          </StackPanel>
+        </ScrollViewer>
+      </Border>
 
-    <Border Grid.Row="4" Background="#15181C" CornerRadius="6" Padding="8">
-      <TextBox x:Name="TxtLog" Background="Transparent" BorderThickness="0" Foreground="#9FD3A0"
-               FontFamily="Consolas" FontSize="11" IsReadOnly="True" VerticalScrollBarVisibility="Auto" TextWrapping="Wrap"/>
-    </Border>
+      <TextBlock Grid.Row="3" x:Name="TxtRoot" FontSize="11" Foreground="#7C7460" Margin="6,6,0,4"/>
+
+      <Border Grid.Row="4" Style="{StaticResource PanelBorder}" Background="#0A0C10" Padding="8">
+        <TextBox x:Name="TxtLog" Style="{StaticResource LogText}"/>
+      </Border>
+    </Grid>
   </Grid>
 </Window>

@@ -18,6 +18,12 @@
     <Version>1.0.0</Version>
     <Product>Dragon's Crown Remote Co-op Helper</Product>
     <Company>RPCS3DC</Company>
+    <ApplicationIcon>Assets\icon.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\hero.png" />
+    <Resource Include="Assets\hero_small.png" />
+  </ItemGroup>
 
 </Project>

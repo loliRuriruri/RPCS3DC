@@ -1,27 +1,115 @@
 <Application x:Class="DragonCrownRemoteCoop.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!--
+    Remote Co-op Helper — UI theme (original design, dark-fantasy storybook:
+    gold frames, parchment text, deep jewel tones). User-provided hero image.
+  -->
   <Application.Resources>
-    <Style x:Key="BigButton" TargetType="Button">
-      <Setter Property="Background" Value="#3A4048"/>
-      <Setter Property="Foreground" Value="White"/>
-      <Setter Property="BorderThickness" Value="0"/>
-      <Setter Property="Padding" Value="10,10,10,10"/>
-      <Setter Property="Margin" Value="4"/>
-      <Setter Property="FontSize" Value="14"/>
-      <Setter Property="FontWeight" Value="SemiBold"/>
-      <Setter Property="Cursor" Value="Hand"/>
+
+    <SolidColorBrush x:Key="BgDeep"      Color="#0B0D12"/>
+    <SolidColorBrush x:Key="BgPanel"     Color="#14181F"/>
+    <SolidColorBrush x:Key="BgPanel2"    Color="#1B2029"/>
+    <SolidColorBrush x:Key="Gold"        Color="#C9A24B"/>
+    <SolidColorBrush x:Key="GoldBright"  Color="#E9CE8A"/>
+    <SolidColorBrush x:Key="GoldDim"     Color="#6E5A2E"/>
+    <SolidColorBrush x:Key="Parchment"   Color="#EDE3CC"/>
+    <SolidColorBrush x:Key="ParchmentDim" Color="#A79C82"/>
+
+    <Style x:Key="PanelBorder" TargetType="Border">
+      <Setter Property="Background" Value="{StaticResource BgPanel}"/>
+      <Setter Property="BorderBrush" Value="{StaticResource GoldDim}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="CornerRadius" Value="4"/>
+      <Setter Property="Padding" Value="12"/>
+      <Setter Property="Margin" Value="0,4,0,4"/>
     </Style>
+
+    <Style x:Key="SectionTitle" TargetType="TextBlock">
+      <Setter Property="FontFamily" Value="Georgia"/>
+      <Setter Property="FontSize" Value="13.5"/>
+      <Setter Property="FontWeight" Value="Bold"/>
+      <Setter Property="Foreground" Value="{StaticResource Gold}"/>
+      <Setter Property="Margin" Value="2,0,0,6"/>
+    </Style>
+
+    <Style x:Key="TitleText" TargetType="TextBlock">
+      <Setter Property="FontFamily" Value="Georgia"/>
+      <Setter Property="FontSize" Value="30"/>
+      <Setter Property="FontWeight" Value="Bold"/>
+      <Setter Property="Foreground" Value="{StaticResource GoldBright}"/>
+    </Style>
+
+    <Style x:Key="SubtitleText" TargetType="TextBlock">
+      <Setter Property="FontFamily" Value="Georgia"/>
+      <Setter Property="FontSize" Value="17"/>
+      <Setter Property="Foreground" Value="{StaticResource Parchment}"/>
+      <Setter Property="Margin" Value="0,-4,0,2"/>
+    </Style>
+
+    <Style x:Key="BigButton" TargetType="Button">
+      <Setter Property="Foreground" Value="{StaticResource Parchment}"/>
+      <Setter Property="Background" Value="{StaticResource BgPanel2}"/>
+      <Setter Property="BorderBrush" Value="{StaticResource GoldDim}"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="Padding" Value="10"/>
+      <Setter Property="Margin" Value="4"/>
+      <Setter Property="FontFamily" Value="Georgia"/>
+      <Setter Property="FontSize" Value="15"/>
+      <Setter Property="FontWeight" Value="Bold"/>
+      <Setter Property="Cursor" Value="Hand"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="bd" Background="{TemplateBinding Background}"
+                    BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
+                    CornerRadius="4" Padding="{TemplateBinding Padding}">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="bd" Property="Background" Value="#2A2313"/>
+                <Setter TargetName="bd" Property="BorderBrush" Value="{StaticResource Gold}"/>
+              </Trigger>
+              <Trigger Property="IsPressed" Value="True">
+                <Setter TargetName="bd" Property="Background" Value="#191308"/>
+              </Trigger>
+              <Trigger Property="IsEnabled" Value="False">
+                <Setter TargetName="bd" Property="Opacity" Value="0.45"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
     <Style x:Key="SmallButton" TargetType="Button" BasedOn="{StaticResource BigButton}">
       <Setter Property="FontSize" Value="12.5"/>
       <Setter Property="FontWeight" Value="Normal"/>
       <Setter Property="Padding" Value="8,7,8,7"/>
     </Style>
+
     <Style x:Key="StatusText" TargetType="TextBlock">
       <Setter Property="FontFamily" Value="Consolas"/>
       <Setter Property="FontSize" Value="12.5"/>
-      <Setter Property="Foreground" Value="#D8E0E8"/>
+      <Setter Property="Foreground" Value="#D9D0B8"/>
       <Setter Property="Margin" Value="2,1,2,1"/>
+    </Style>
+
+    <Style x:Key="LogText" TargetType="TextBox">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Foreground" Value="#9FD3A0"/>
+      <Setter Property="FontFamily" Value="Consolas"/>
+      <Setter Property="FontSize" Value="11"/>
+      <Setter Property="IsReadOnly" Value="True"/>
+      <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
+      <Setter Property="TextWrapping" Value="Wrap"/>
+    </Style>
+
+    <Style x:Key="Check" TargetType="CheckBox">
+      <Setter Property="Foreground" Value="{StaticResource ParchmentDim}"/>
+      <Setter Property="Margin" Value="4,10,4,2"/>
     </Style>
   </Application.Resources>
 </Application>

@@ -16,10 +16,13 @@ DST = r"E:\PS3\GitHub\RPCS3DC"
 INCLUDE_DIRS = {
     "Docs": ("docs", ("*.md",)),
     "Launchers": ("launcher", ("*.cmd", "*.ps1")),
-    "Launcher\\src": ("launcher/src", ("*.cs", "*.xaml", "*.csproj")),
-    "remote-coop\\src": ("remote-coop/src", ("*.cs", "*.xaml", "*.csproj")),
+    "Launcher\\src": ("launcher/src", ("*.cs", "*.xaml", "*.csproj", "*.ico", "*.png", "*.txt")),
+    "remote-coop\\src": ("remote-coop/src", ("*.cs", "*.xaml", "*.csproj", "*.ico", "*.png", "*.txt")),
     "Tools": ("tools", ("*.py", "*.ps1", "*.cmd")),
 }
+
+# binary assets are copied byte-for-byte (never run through the text scrubber)
+BINARY_EXTS = (".ico", ".png", ".jpg", ".jpeg", ".dll", ".exe")
 
 # single files copied to a fixed repository path (scrubbed)
 ROOT_FILES = {
@@ -112,6 +115,10 @@ def main():
                 continue
             dst_path = os.path.join(DST, dst_dir, name)
             os.makedirs(os.path.dirname(dst_path), exist_ok=True)
+            if name.lower().endswith(BINARY_EXTS):
+                shutil.copyfile(full, dst_path)
+                copied += 1
+                continue
             with open(full, "r", encoding="utf-8", errors="replace") as f:
                 text = f.read()
             with open(dst_path, "w", encoding="utf-8", newline="\n") as f:

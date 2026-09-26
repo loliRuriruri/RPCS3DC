@@ -39,8 +39,9 @@ namespace DragonCrownRemoteCoop
             bool host = role != "guest";
             PanelHost.Visibility = host ? Visibility.Visible : Visibility.Collapsed;
             PanelGuest.Visibility = host ? Visibility.Collapsed : Visibility.Visible;
-            BtnRoleHost.Background = new SolidColorBrush(host ? Color.FromRgb(0x5A, 0x3E, 0x6B) : Color.FromRgb(0x3A, 0x40, 0x48));
-            BtnRoleGuest.Background = new SolidColorBrush(host ? Color.FromRgb(0x2F, 0x5D, 0x50) : Color.FromRgb(0x5A, 0x3E, 0x6B));
+            // Dragon's Crown palette: crimson = HOST (active), forest = GUEST (active), stone = inactive
+            BtnRoleHost.Background = new SolidColorBrush(host ? Color.FromRgb(0x5A, 0x2A, 0x2A) : Color.FromRgb(0x1B, 0x20, 0x29));
+            BtnRoleGuest.Background = new SolidColorBrush(host ? Color.FromRgb(0x1B, 0x20, 0x29) : Color.FromRgb(0x22, 0x40, 0x2F));
         }
 
         private void RefreshAll()
