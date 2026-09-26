@@ -168,31 +168,104 @@ namespace DragonCrownProEnhanced
             w.ShowDialog();
         }
 
+        // ------------------------------------------------------------- MULTIPLAYER — Remote Co-op Helper
+        private string HelperExe => Path.Combine(_p.Root, "Launcher", "DragonCrownRemoteCoopSetup.exe");
+
+        private Dictionary<string, string> ReadHelperStatus()
+        {
+            var d = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            try
+            {
+                if (!File.Exists(HelperExe)) return d;
+                string outFile = Path.Combine(_p.LogDir, "remote_coop_status.txt");
+                var psi = new ProcessStartInfo(HelperExe, "--status \"" + outFile + "\"")
+                { UseShellExecute = false, CreateNoWindow = true, WorkingDirectory = Path.GetDirectoryName(HelperExe) };
+                using var proc = Process.Start(psi);
+                proc.WaitForExit(9000);
+                if (!File.Exists(outFile)) return d;
+                foreach (var line in File.ReadAllLines(outFile))
+                {
+                    var kv = line.Split(new[] { '=' }, 2);
+                    if (kv.Length == 2) d[kv[0].Trim()] = kv[1].Trim();
+                }
+            }
+            catch { }
+            return d;
+        }
+
+        private void RunHelper(string arguments)
+        {
+            try
+            {
+                if (!File.Exists(HelperExe)) { MessageBox.Show("Remote Co-op Helper 가 없습니다:\n" + HelperExe); return; }
+                Process.Start(new ProcessStartInfo(HelperExe, arguments)
+                { UseShellExecute = true, WorkingDirectory = Path.GetDirectoryName(HelperExe) });
+                Append("Remote Co-op Helper 실행: " + arguments);
+            }
+            catch (Exception ex) { MessageBox.Show(ex.Message); }
+        }
+
         private void BtnRemote_Click(object sender, RoutedEventArgs e)
         {
-            string sun = _p.SunshineStatus();
-            string p2 = _p.ControllerHandler(2);
-            var w = MakePanel("MULTIPLAYER — Remote Co-op (Sunshine + Moonlight)", 540);
+            var st = ReadHelperStatus();
+            string val(string key, string fallback) => st.TryGetValue(key, out var v) ? v : fallback;
+            string sun = val("HOST_SUNSHINE_INSTALLED", "NO") == "YES"
+                ? "✓ " + val("HOST_SUNSHINE_VERSION", "installed") + " / service " + val("HOST_SUNSHINE_SERVICE", "?")
+                : "✗ 미설치 (Helper 로 설치)";
+            string backend = val("HOST_BACKEND", _p.SunshineStatus());
+            string p2 = val("HOST_P2", _p.ControllerHandler(2));
+            string pad = val("HOST_VIRTUAL_PAD", "WAITING FOR GUEST");
+            string ready = val("HOST_READY", "NO");
+            string guest = val("HOST_GUEST", "WAITING");
+
+            var w = MakePanel("MULTIPLAYER — Remote Co-op (Sunshine + Moonlight)", 600);
             var panel = new StackPanel { Margin = new Thickness(14) };
             panel.Children.Add(Info(
                 "한 PC에서 로컬 2P를 실행하고, 친구가 원격으로 2P 패드를 조작합니다.\n" +
                 "(RPCN/PSN 불필요 · 같은 세션 · 그래픽 MOD와 충돌 가능성 낮음)\n" +
-                "Status: IMPLEMENTED / HARDWARE TEST PENDING (Sunshine + 친구 PC 필요)\n\n" +
-                "· 게임 실행 PC = HOST, 친구 패드 = HOST의 2P 입력\n" +
-                "· 친구는 자기 RPCS3 세이브/캐릭터를 쓰는 구조가 아닙니다(문서 참고).\n" +
-                "· Sunshine 은 권장 방법이며 Parsec 등 다른 원격 입력 방법도 사용할 수 있습니다.\n\n" +
-                "진단:\n" +
-                $"  Sunshine        : {sun}\n" +
-                $"  Controller 2    : {p2}\n" +
-                $"  RPCS3 / Game    : {(File.Exists(_p.Rpcs3Exe) ? "OK" : "없음")} / {(_p.GameExe != null ? "OK" : "없음")}\n\n" +
+                "Status: IMPLEMENTED / E2E TEST PENDING (2대 PC 필요)\n\n" +
+                "Helper 상태 (DragonCrownRemoteCoopSetup.exe):\n" +
+                $"  Sunshine      : {sun}\n" +
+                $"  Gamepad       : {backend}\n" +
+                $"  Player 2      : {p2}\n" +
+                $"  Guest Pad     : {pad}   Guest: {guest}\n" +
+                $"  HOST READY    : {ready}\n\n" +
                 "절차:\n" +
-                "1) HOST: Sunshine 실행 → Moonlight 페어링(PIN)\n" +
-                "2) HOST: 2P 패드(또는 가상 패드) 설정 후 이 런처로 게임 실행\n" +
-                "3) 친구: Moonlight 접속 → 패드 입력 전달\n" +
-                "4) 게임 내에서 2P Start 로 합류"));
+                "1) HOST: [SETUP HOST] → Sunshine 설치/실행 + Controller-only + P2 XInput\n" +
+                "2) GUEST(친구 PC): [GUEST SETUP] → Moonlight 설치 + 패드 + HOST 페어링\n" +
+                "3) 친구가 Moonlight Desktop 스트림 접속 → [TEST REMOTE PAD]\n" +
+                "4) [START REMOTE CO-OP] → 게임 실행 → 2P Start 로 합류"));
+            panel.Children.Add(PanelButton("SETUP HOST (DragonCrownRemoteCoopSetup.exe --host)", () => RunHelper("--host")));
+            panel.Children.Add(PanelButton("GUEST SETUP 안내 (친구 PC용 --guest)", () => RunHelper("--guest")));
+            panel.Children.Add(PanelButton("TEST REMOTE PAD (8초 입력 테스트)", () =>
+            {
+                try
+                {
+                    if (!File.Exists(HelperExe)) { MessageBox.Show("Helper 가 없습니다."); return; }
+                    string outFile = Path.Combine(_p.LogDir, "remote_coop_padtest.txt");
+                    var psi = new ProcessStartInfo(HelperExe, "--test-pad \"" + outFile + "\"")
+                    { UseShellExecute = false, CreateNoWindow = true, WorkingDirectory = Path.GetDirectoryName(HelperExe) };
+                    using var proc = Process.Start(psi);
+                    proc.WaitForExit(20000);
+                    MessageBox.Show(File.Exists(outFile) ? File.ReadAllText(outFile) : "결과 파일이 없습니다.", "TEST REMOTE PAD");
+                }
+                catch (Exception ex) { MessageBox.Show(ex.Message); }
+            }));
+            panel.Children.Add(PanelButton("진단 다시 실행 (Helper 상태 새로 고침)", () =>
+            {
+                var st2 = ReadHelperStatus();
+                string line(string k) => st2.TryGetValue(k, out var v) ? k + " = " + v : k + " = (없음)";
+                MessageBox.Show(string.Join("\n", new[]
+                {
+                    line("HOST_SUNSHINE_INSTALLED"), line("HOST_SUNSHINE_SERVICE"), line("HOST_SUNSHINE_WEBUI"),
+                    line("HOST_BACKEND"), line("HOST_CONTROLLER_ONLY"), line("HOST_P2_XINPUT"),
+                    line("HOST_VIRTUAL_PAD"), line("HOST_GUEST"), line("HOST_READY"),
+                    line("GUEST_MOONLIGHT_INSTALLED"), line("GUEST_CONTROLLER"),
+                }), "Remote Co-op Helper 상태");
+                Append("Helper 상태 새로 고침");
+            }));
             panel.Children.Add(PanelButton("Sunshine 다운로드 페이지 열기", () =>
                 Process.Start(new ProcessStartInfo("https://github.com/LizardByte/Sunshine") { UseShellExecute = true })));
-            panel.Children.Add(PanelButton("진단 다시 실행", () => { RefreshStatus(); MessageBox.Show("Sunshine: " + _p.SunshineStatus() + "\n2P: " + _p.ControllerHandler(2)); }));
             panel.Children.Add(PanelButton("Remote Co-op 으로 실행 (" + _p.ResolutionShort + ")", () =>
             {
                 Preflight(_p.ActiveProfile, false, true);
