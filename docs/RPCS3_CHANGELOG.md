@@ -79,6 +79,23 @@
 | 48 | Windows 방화벽 인바운드 규칙 추가(사용자 승인) | `RPCS3 (Private)`, `RPCS3 (Public)` → `E:\PS3\RPCS3\rpcs3.exe` Any 허용 | 현재 네트워크가 Public 분류라 두 프로필 모두 등록. 제거/재추가 스크립트: `Tools\firewall_rpcs3_remove.cmd`, `firewall_rpcs3_allow.cmd` |
 | 49 | 30분 연속 실행 검증(RUN7, 4K+ReShade) | `E:\PS3\Logs\RUN7_4K_POSTFX_30min_*` | **11분 3초에 게임이 스스로 종료**(`_sys_process_exit`, exit code 0, 크래시 아님) — 타이틀 방치 시 게임 자체 종료. 30분 연속 *플레이* 검증은 사용자 수행 필요 |
 
+## 2026-09-26 — Phase 1: PC Edition (Graphics A/B · Multiplayer 3종 · 진단/백업/복구)
+
+| # | 변경 | 위치 | 비고 |
+|---|---|---|---|
+| 85 | 그래픽 A(Standard) 확정 | 4개 프로필 | **AF 16x** · MSAA Auto · Stretch Off · 16:9 · Scale 300/400% · VSync Full · VBlank 60 · Frame Skip Off |
+| 86 | 그래픽 B(Pro Enhanced) 프리셋 | `ReShade\Presets\DC_PRO_ENHANCED.ini` | Deband + CAS(0.32) + Levels + Vibrance(0.10) + SMAA — 원본 느낌 유지, 과도한 효과 배제 |
+| 87 | 셰이더 추가 | `Mods_Patches\ReShade\Shaders` | Levels.fx · Vibrance.fx (공식 SweetFX 소스) |
+| 88 | ReShade.ini 프리셋 전환 | `RPCS3\ReShade.ini` | PresetPath 를 프리셋에 맞춰 자동 전환(Silent [OVERLAY] 유지) |
+| 89 | Netplay Safe 프로필 | `Profiles\Dragons_Crown\NETPLAY_SAFE` | 실험/네트워크 영향 옵션 전부 보수값 고정 |
+| 90 | 런처 UI 재구성 | `Launcher\src\MainWindow.xaml(.cs)` | PLAY(Standard/Pro Enhanced) · MULTIPLAYER(Local/Remote Co-op/RPCN) · SETTINGS(Graphics/Controller/Network/Advanced) · TOOLS(Diagnostics/Reset/Backup/KnownGood) |
+| 91 | Diagnostics | 런처 TOOLS | RPCS3 · 게임 · 버전 · 펌웨어 · PPU · 세이브 · 1P/2P · 해상도 · ReShade · Sunshine · RPCN · 치트/패치 · 프로필 24항목 + 원인 안내 |
+| 92 | 설정 백업/복구 | 런처 TOOLS + `Backups\<시각>_<라벨>` | config/custom config/ReShade.ini/CurrentSettings.ini/프로필/입력설정. **세이브는 대상 아님** |
+| 93 | Reset | 런처 TOOLS | Reset Graphics / Reset Multiplayer (실행 전 자동 백업) |
+| 94 | CLI 확장 | 런처 | `--preset`, `--diag`, `--backup-settings`, `--reset-graphics`, `--reset-multiplayer`, `--launch STANDARD\|PROENHANCED\|LOCAL\|REMOTE\|RPCN\|RPCNSAFE\|CHEAT\|KNOWNGOOD` |
+| 95 | 멀티플레이 문서 | `Docs\MULTIPLAYER.md` | Local / Remote Co-op(Sunshine+Moonlight) / RPCN + Netplay Safe + 테스트 매트릭스 |
+| 96 | Phase 1 검증 | 실측 | Standard: ReShade 미로드(로그 크기 불변) / Pro Enhanced: ReShade 6종 컴파일 + Silent / Reset: AF16·RPCN·UPNP Off 복원 확인 |
+| 97 | PS4 Pro 이식 금지 명시 | 문서 | Phase 2 로 분리(텍스처/UI/음원/실행파일 분석 금지) |
 ## 2026-09-26 — Borderless 4K 런처 (GUI + Win32 창 제어)
 
 | # | 변경 | 위치 | 비고 |
