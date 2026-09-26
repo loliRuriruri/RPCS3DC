@@ -16,13 +16,31 @@ namespace DragonCrownRemoteCoop
         public PadBackend Kind = PadBackend.Missing;
         public string Version = "";
         public string Detail = "";
+        public bool VirtualHidInstalled;
+        public string VirtualHidVersion = "";
+        public bool ViGEmBusInstalled;
+        public string ViGEmBusVersion = "";
+
+        /// <summary>Any usable backend (either path).</summary>
         public bool Ready => Kind != PadBackend.Missing;
+
+        /// <summary>Free path (recommended for Dragon's Crown): ViGEmBus installed.</summary>
+        public bool FreeReady => ViGEmBusInstalled;
+
         public string Label => Kind switch
         {
-            PadBackend.VirtualHid => "Virtual HID" + (Version.Length > 0 ? " " + Version : ""),
-            PadBackend.ViGEmBus => "ViGEmBus " + (Version.Length > 0 ? Version : "(1.17+ 필요)"),
+            PadBackend.VirtualHid => "Virtual HID" + (VirtualHidVersion.Length > 0 ? " " + VirtualHidVersion : ""),
+            PadBackend.ViGEmBus => "ViGEmBus " + (ViGEmBusVersion.Length > 0 ? ViGEmBusVersion : "(1.17+ 필요)"),
             _ => "Missing",
         };
+
+        public string FreeLabel => ViGEmBusInstalled
+            ? "ViGEmBus " + (ViGEmBusVersion.Length > 0 ? ViGEmBusVersion : "")
+            : "Not installed";
+
+        public string PremiumLabel => VirtualHidInstalled
+            ? "Virtual HID" + (VirtualHidVersion.Length > 0 ? " " + VirtualHidVersion : "")
+            : "Not installed (optional)";
     }
 
     public sealed class PadTestResult
@@ -181,25 +199,35 @@ namespace DragonCrownRemoteCoop
             return reg.Length > 0;
         }
 
-        /// <summary>Virtual HID (preferred when installed/licensed) -> ViGEmBus fallback -> Missing.</summary>
+        /// <summary>
+        /// Backend detection. Dragon's Crown uses the FREE ViGEmBus + gamepad=x360 path by default;
+        /// Virtual HID Driver (paid) is optional premium and never a blocker.
+        /// </summary>
         public static BackendStatus Backend()
         {
             var s = new BackendStatus();
-            if (VirtualHidInstalled(out string vh, out string vhd))
+            s.VirtualHidInstalled = VirtualHidInstalled(out string vhv, out string vhd);
+            s.VirtualHidVersion = vhv;
+            s.ViGEmBusInstalled = ViGEmBusInstalled(out string vgv, out string vgd);
+            s.ViGEmBusVersion = vgv;
+
+            if (s.VirtualHidInstalled)
             {
                 s.Kind = PadBackend.VirtualHid;
-                s.Version = vh;
-                s.Detail = "Virtual HID Driver detected (" + vhd + "). License status is shown in the Sunshine Web UI.";
+                s.Version = vhv;
+                s.Detail = "Virtual HID Driver detected (" + vhd + "). Premium/optional - license status is shown in the Sunshine Web UI. " +
+                           "The free ViGEmBus path also works for Dragon's Crown.";
                 return s;
             }
-            if (ViGEmBusInstalled(out string vg, out string vgd))
+            if (s.ViGEmBusInstalled)
             {
                 s.Kind = PadBackend.ViGEmBus;
-                s.Version = vg;
-                s.Detail = "ViGEmBus detected (" + vgd + "). Free legacy fallback (Xbox 360 / DS4 only).";
+                s.Version = vgv;
+                s.Detail = "ViGEmBus detected (" + vgd + "). FREE legacy fallback (Xbox 360 / XInput) - recommended for Dragon's Crown Remote 2P.";
                 return s;
             }
-            s.Detail = "No gamepad backend. Install Virtual HID Driver (paid, Sunshine Web UI) or the free ViGEmBus fallback.";
+            s.Detail = "No gamepad backend yet. Install the FREE ViGEmBus driver (recommended). " +
+                       "Virtual HID Driver (paid) is optional premium and NOT required for Dragon's Crown.";
             return s;
         }
 

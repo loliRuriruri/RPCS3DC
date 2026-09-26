@@ -58,7 +58,8 @@ namespace DragonCrownRemoteCoop
             {
                 $"Sunshine          {ck(s.SunshineInstalled)} {(s.SunshineInstalled ? (s.SunshineVersion.Length > 0 ? s.SunshineVersion : "installed") : "Not Installed")}" +
                     $"    Service {ck(s.ServiceRunning)} {(s.ServiceExists ? s.ServiceState : "not found")}    WebUI {ck(s.WebUiReachable)}",
-                $"Gamepad Backend   {ck(s.Backend.Ready)} {s.Backend.Label}",
+                $"Gamepad Backend   {ck(s.BackendReadyForDc)} {(s.Backend.FreeReady ? "FREE: " + s.Backend.FreeLabel : s.Backend.Label)}" +
+                    (s.Backend.VirtualHidInstalled ? "   (premium: Virtual HID)" : ""),
                 $"Controller Input  {ck(s.Policy.ControllerEnabled)} {(s.Policy.ControllerEnabled ? "ON" : "OFF")}    Keyboard/Mouse {(s.Policy.ControllerOnly ? "OFF (controller-only)" : "ON")}    gamepad={s.Policy.Gamepad}",
                 $"Virtual Pad       {ck(s.VirtualPadReady)} {s.VirtualPadState}  (xinput={s.XInputCount})",
                 $"RPCS3             {ck(s.Rpcs3Found)} {(s.Rpcs3Found ? Rpcs3Integration.Rpcs3Exe : "not found")}",
@@ -67,6 +68,18 @@ namespace DragonCrownRemoteCoop
                     (Rpcs3Integration.Player2IsXInput ? "" : "   → [SET P2 TO XINPUT]"),
                 $"Guest             {ck(s.GuestConnected)} {(s.GuestConnected ? "Connected" : "Waiting")}",
                 $"HOST READY        {ck(s.Ready)} {(s.Ready ? "READY" : "NOT READY")}",
+            });
+
+            TxtHostBackend.Text = string.Join(Environment.NewLine, new[]
+            {
+                "GAMEPAD BACKEND",
+                "  [ FREE — Recommended for Dragon's Crown ]",
+                $"    ViGEmBus       {(s.Backend.ViGEmBusInstalled ? "✓ " + s.Backend.FreeLabel : "✗ not installed")}",
+                "                   Xbox 360 / XInput emulation · Free · Legacy / EOL · Enough for Dragon's Crown Remote 2P",
+                "  [ PREMIUM — Optional ]",
+                $"    Virtual HID    {(s.Backend.VirtualHidInstalled ? "✓ " + s.Backend.PremiumLabel : "✗ not installed (optional)")}",
+                "                   Current Sunshine advanced driver · Paid license required · NOT REQUIRED for Dragon's Crown",
+                $"  Dragon's Crown Ready: {(s.BackendReadyForDc ? "✓ YES" : "✗ NO")}    gamepad={(s.Policy.Gamepad.Length > 0 ? s.Policy.Gamepad : "auto(default)")}",
             });
 
             var steps = HostSetup.Steps();
@@ -144,6 +157,10 @@ namespace DragonCrownRemoteCoop
                     bool policyOk = SunshineManager.ApplyControllerOnly(true, out string policyErr);
                     if (!policyOk) progress("WARNING: policy not applied: " + policyErr);
                 }
+
+                if (!HostSetup.GetStatus().BackendReadyForDc)
+                    progress("Gamepad backend missing — use [INSTALL FREE GAMEPAD DRIVER (ViGEmBus)] (free, recommended). " +
+                             "Virtual HID Driver (paid) is optional and NOT required for Dragon's Crown.");
 
                 progress("Starting Sunshine ...");
                 var (started, startMsg) = HostSetup.StartSunshine();
@@ -238,13 +255,14 @@ namespace DragonCrownRemoteCoop
         private void BtnViGEm_Click(object sender, RoutedEventArgs e)
         {
             var r = MessageBox.Show(
-                "ViGEmBus 는 무료 legacy/EOL 드라이버입니다.\n" +
-                "· Xbox 360 / DualShock 4 가상패드만 지원합니다.\n" +
-                "· 공식 nefarius/ViGEmBus GitHub release 에서만 다운로드합니다.\n" +
-                "· Virtual HID Driver(유료)를 사용 중이라면 필요하지 않습니다.\n\n설치할까요?",
-                "INSTALL ViGEmBus (legacy, free)", MessageBoxButton.OKCancel, MessageBoxImage.Information);
+                "ViGEmBus — FREE gamepad driver (recommended for Dragon's Crown)\n" +
+                "· Xbox 360 / XInput 가상패드 (RPCS3 Player 2 와 일치)\n" +
+                "· 무료 · legacy/EOL (저장소 archived 2023-11)\n" +
+                "· 공식 nefarius/ViGEmBus GitHub release 에서만 다운로드\n" +
+                "· Virtual HID Driver(유료)는 선택 사항이며 이 프로젝트에는 필요하지 않습니다.\n\n설치할까요?",
+                "INSTALL FREE GAMEPAD DRIVER (ViGEmBus)", MessageBoxButton.OKCancel, MessageBoxImage.Information);
             if (r != MessageBoxResult.OK) return;
-            RunTask("INSTALL ViGEmBus", progress => HostSetup.InstallViGEmBus(progress));
+            RunTask("INSTALL ViGEmBus (FREE)", progress => HostSetup.InstallViGEmBus(progress));
         }
 
         private void BtnRestoreSun_Click(object sender, RoutedEventArgs e)

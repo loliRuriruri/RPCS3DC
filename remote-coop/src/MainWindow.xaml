@@ -37,6 +37,7 @@
         <StackPanel>
           <TextBlock Text="HOST — GAME PC" FontSize="14" FontWeight="Bold" Foreground="#F2C14E"/>
           <TextBlock x:Name="TxtHostStatus" Style="{StaticResource StatusText}" Margin="2,8,2,2"/>
+          <TextBlock x:Name="TxtHostBackend" Style="{StaticResource StatusText}" Margin="2,8,2,2" Foreground="#BFD4EA"/>
           <TextBlock x:Name="TxtHostSteps" Style="{StaticResource StatusText}" Margin="2,6,2,2" Foreground="#9FD3A0"/>
           <CheckBox x:Name="CbControllerOnly" Content="Controller-only Mode (Recommended) — 친구의 키보드/마우스 입력 차단, gamepad=x360"
                     Foreground="Silver" Margin="4,10,4,2" IsChecked="True"/>
@@ -49,7 +50,7 @@
             <Button x:Name="BtnSetP2" Style="{StaticResource SmallButton}" Content="SET P2 TO XINPUT" Click="BtnSetP2_Click"/>
             <Button x:Name="BtnOpenPadSettings" Style="{StaticResource SmallButton}" Content="OPEN RPCS3 CONTROLLER SETTINGS" Click="BtnOpenPadSettings_Click"/>
             <Button x:Name="BtnStartRemote" Style="{StaticResource SmallButton}" Background="#5D4A2F" Content="START REMOTE CO-OP" Click="BtnStartRemote_Click"/>
-            <Button x:Name="BtnViGEm" Style="{StaticResource SmallButton}" Content="INSTALL FREE LEGACY DRIVER (ViGEmBus)" Click="BtnViGEm_Click"/>
+            <Button x:Name="BtnViGEm" Style="{StaticResource SmallButton}" Content="INSTALL FREE GAMEPAD DRIVER (ViGEmBus)" Click="BtnViGEm_Click"/>
             <Button x:Name="BtnRestoreSun" Style="{StaticResource SmallButton}" Content="RESTORE SUNSHINE CONFIG" Click="BtnRestoreSun_Click"/>
             <Button x:Name="BtnRestoreP2" Style="{StaticResource SmallButton}" Content="RESTORE RPCS3 INPUT" Click="BtnRestoreP2_Click"/>
             <Button x:Name="BtnOpenSunCfg" Style="{StaticResource SmallButton}" Content="OPEN SUNSHINE CONFIG FOLDER" Click="BtnOpenSunCfg_Click"/>

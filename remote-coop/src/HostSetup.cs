@@ -23,7 +23,16 @@ namespace DragonCrownRemoteCoop
         public int XInputCount;
         public bool VirtualPadReady;
         public bool GuestConnected;
-        public bool Ready => SunshineInstalled && ServiceRunning && Backend.Ready &&
+        public bool X360Configured => Policy.Gamepad.Equals("x360", StringComparison.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// Dragon's Crown ready rule:
+        /// A) Virtual HID Driver working  OR  B) ViGEmBus + gamepad=x360 (free path).
+        /// The free path (B) alone is sufficient for Remote 2P.
+        /// </summary>
+        public bool BackendReadyForDc => Backend.Kind == PadBackend.VirtualHid || (Backend.ViGEmBusInstalled && X360Configured);
+
+        public bool Ready => SunshineInstalled && ServiceRunning && BackendReadyForDc &&
                              Policy.ControllerOnly && Rpcs3Found && Rpcs3Integration.Player2IsXInput;
         public string VirtualPadState => VirtualPadReady ? "READY" : (GuestConnected ? "WAITING FOR PAD" : "WAITING FOR GUEST");
     }
@@ -94,7 +103,12 @@ namespace DragonCrownRemoteCoop
                 "HOST_SUNSHINE_SERVICE=" + (s.ServiceRunning ? "RUNNING" : (s.ServiceExists ? s.ServiceState : "NOT_FOUND")),
                 "HOST_SUNSHINE_WEBUI=" + (s.WebUiReachable ? "OK" : "UNAVAILABLE"),
                 "HOST_BACKEND=" + s.Backend.Label,
-                "HOST_BACKEND_READY=" + (s.Backend.Ready ? "YES" : "NO"),
+                "HOST_BACKEND_READY=" + (s.BackendReadyForDc ? "YES" : "NO"),
+                "HOST_BACKEND_FREE=" + (s.Backend.FreeReady ? "YES" : "NO"),
+                "HOST_BACKEND_FREE_LABEL=" + s.Backend.FreeLabel,
+                "HOST_BACKEND_PREMIUM=" + (s.Backend.VirtualHidInstalled ? "YES" : "NO_OPTIONAL"),
+                "HOST_GAMEPAD_MODE=" + (s.Policy.Gamepad.Length > 0 ? s.Policy.Gamepad : "auto(default)"),
+                "HOST_X360=" + (s.X360Configured ? "YES" : "NO"),
                 "HOST_CONTROLLER_ONLY=" + (s.Policy.ControllerOnly ? "ON" : "OFF"),
                 "HOST_POLICY=" + s.Policy.Summary,
                 "HOST_RPCS3=" + (s.Rpcs3Found ? "FOUND" : "MISSING"),
@@ -206,10 +220,13 @@ namespace DragonCrownRemoteCoop
         public static List<(string step, bool ok, string detail)> Steps()
         {
             var s = GetStatus();
+            string backendDetail = s.Backend.FreeReady
+                ? $"FREE: {s.Backend.FreeLabel} · gamepad={(s.Policy.Gamepad.Length > 0 ? s.Policy.Gamepad : "auto")}"
+                : s.Backend.Label;
             return new List<(string, bool, string)>
             {
                 ("[1/6] Sunshine", s.SunshineInstalled, s.SunshineInstalled ? s.SunshineVersion : "not installed"),
-                ("[2/6] Gamepad backend", s.Backend.Ready, s.Backend.Label),
+                ("[2/6] Gamepad backend", s.BackendReadyForDc, backendDetail),
                 ("[3/6] Controller settings", s.Policy.ControllerOnly, s.Policy.Summary),
                 ("[4/6] RPCS3 Player 2", Rpcs3Integration.Player2IsXInput, s.P2),
                 ("[5/6] Pairing", s.WebUiReachable, s.WebUiReachable ? "Sunshine Web UI ready" : "Web UI unavailable"),

@@ -40,14 +40,20 @@ namespace DragonCrownRemoteCoop
                 "Sunshine 실행 후 Web UI(47990) 접속 확인", "SUNSHINE_WEBUI_UNAVAILABLE"));
 
             var b = s.Backend;
-            list.Add(Item("Gamepad backend", b.Ready, b.Label, b.Detail, "GAMEPAD_BACKEND_MISSING"));
-            list.Add(Item("Virtual HID Driver", b.Kind == PadBackend.VirtualHid,
-                b.Kind == PadBackend.VirtualHid ? (b.Version.Length > 0 ? b.Version : "installed") : "not installed",
-                "유료 라이선스 필요(공식 정책) — Sunshine Web UI 에서 설치/라이선스 확인. 무료 대안은 ViGEmBus.",
+            list.Add(Item("Gamepad backend (Dragon's Crown)", s.BackendReadyForDc,
+                b.FreeReady
+                    ? $"FREE READY: {b.FreeLabel} · gamepad={(s.Policy.Gamepad.Length > 0 ? s.Policy.Gamepad : "auto")}"
+                    : b.Label,
+                "FREE 경로 권장: ViGEmBus(무료) + gamepad=x360. Virtual HID(유료)는 선택이며 없어도 진행 가능.",
+                "GAMEPAD_BACKEND_MISSING"));
+            list.Add(Item("ViGEmBus (FREE — recommended)", b.ViGEmBusInstalled,
+                b.FreeLabel,
+                "HOST SETUP → [INSTALL FREE GAMEPAD DRIVER (ViGEmBus)] — 무료 legacy/EOL 드라이버(Xbox 360/XInput).",
+                "VIGEMBUS_MISSING"));
+            list.Add(Item("Virtual HID Driver (PREMIUM — optional)", true,
+                b.VirtualHidInstalled ? b.PremiumLabel : "Not installed (optional)",
+                "유료 라이선스가 필요한 선택 기능입니다. Dragon's Crown Remote 2P 에는 필요하지 않습니다.",
                 "VIRTUAL_HID_UNAVAILABLE"));
-            list.Add(Item("ViGEmBus (free fallback)", b.Kind == PadBackend.ViGEmBus,
-                b.Kind == PadBackend.ViGEmBus ? (b.Version.Length > 0 ? b.Version : "installed") : "not installed",
-                "legacy/EOL — 사용자가 직접 선택한 경우에만 설치 (HOST SETUP 버튼)", "VIGEMBUS_MISSING"));
 
             list.Add(Item("Controller input", s.Policy.ControllerEnabled,
                 s.Policy.ControllerEnabled ? "enabled" : "disabled",

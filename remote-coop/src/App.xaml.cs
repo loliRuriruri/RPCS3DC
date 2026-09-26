@@ -207,6 +207,28 @@ namespace DragonCrownRemoteCoop
                     break;
                 }
 
+                case "--fix-p2":
+                {
+                    string file = a1 ?? Path.Combine(AppEnv.LogDir, "remote_coop_fixp2.txt");
+                    var sb = new List<string>();
+                    if (Rpcs3Integration.Player2IsXInput)
+                    {
+                        sb.Add("Player 2 is already XInput. No change.");
+                    }
+                    else
+                    {
+                        bool ok = Rpcs3Integration.SetPlayer2ToXInput(out string err);
+                        sb.Add(ok ? "Player 2 set to XInput (input config backed up under Backups\\RemoteCoop)."
+                                  : "FAILED: " + err);
+                    }
+                    sb.Add("Player 1: " + Rpcs3Integration.ControllerHandler(1) + "  (never modified)");
+                    sb.Add("Player 2: " + Rpcs3Integration.ControllerHandler(2));
+                    Directory.CreateDirectory(Path.GetDirectoryName(file));
+                    File.WriteAllLines(file, sb);
+                    foreach (var l in sb) WriteOut(l);
+                    break;
+                }
+
                 case "--restore":
                 {
                     string what = a1 ?? "all";
