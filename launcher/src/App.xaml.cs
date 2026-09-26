@@ -7,6 +7,8 @@ namespace DragonCrownProEnhanced
 {
     public partial class App : Application
     {
+        public static bool CliMode { get; private set; }
+
         protected override void OnStartup(StartupEventArgs e)
         {
             // make sure the borderless window style is restored even if this app closes early
@@ -36,6 +38,7 @@ namespace DragonCrownProEnhanced
             var args = e.Args ?? Array.Empty<string>();
             if (args.Length > 0)
             {
+                CliMode = true;
                 RunCli(args);
                 Shutdown();
                 return;
@@ -211,6 +214,37 @@ namespace DragonCrownProEnhanced
                             proc.WaitForExit();
                             p.Log("cli --launch " + what + " -> game exited (code " + proc.ExitCode + ")");
                         }
+                        break;
+                    }
+                    case "--rpcs3":
+                    {
+                        string what = args.Length > 1 ? args[1].ToLowerInvariant() : "status";
+                        if (what == "status")
+                        {
+                            string line = Rpcs3UiBridge.StatusLine(p);
+                            Console.WriteLine("RPCS3: " + line);
+                            p.Log("cli --rpcs3 status -> " + line);
+                            break;
+                        }
+                        if (what == "burst")
+                        {
+                            var tasks = Enumerable.Range(0, 10)
+                                .Select(_ => System.Threading.Tasks.Task.Run(() => Rpcs3UiBridge.EnsureMainWindow(p)))
+                                .ToArray();
+                            System.Threading.Tasks.Task.WaitAll(tasks);
+                            int count = Rpcs3UiBridge.ProjectProcesses(p).Count;
+                            Console.WriteLine("BURST_DONE processes=" + count);
+                            p.Log("cli --rpcs3 burst -> processes=" + count);
+                            break;
+                        }
+                        var kind = what == "controller" ? Rpcs3SettingsKind.Controller
+                                 : what == "rpcn" ? Rpcs3SettingsKind.Rpcn
+                                 : what == "general" ? Rpcs3SettingsKind.General
+                                 : Rpcs3SettingsKind.MainWindow;
+                        var (ok, msg) = Rpcs3UiBridge.OpenSettings(p, kind);
+                        string flat = msg.Replace("\r\n", " | ").Replace("\n", " | ");
+                        Console.WriteLine((ok ? "OK: " : "FAIL: ") + flat);
+                        p.Log("cli --rpcs3 " + what + " -> " + (ok ? "ok" : "fail") + " | " + flat);
                         break;
                     }
                     default:
