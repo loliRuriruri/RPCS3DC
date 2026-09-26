@@ -106,6 +106,8 @@ def main():
         if not os.path.isdir(src_root):
             continue
         for root, dirs, files in os.walk(src_root):
+            # never publish build artifacts
+            dirs[:] = [d for d in dirs if d.lower() not in ("obj", "bin", ".vs", "node_modules")]
             rel_root = os.path.relpath(root, src_root)
             for name in sorted(files):
                 full = os.path.join(root, name)
