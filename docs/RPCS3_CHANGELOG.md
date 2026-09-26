@@ -158,6 +158,19 @@
 
 ---
 
+## 2026-09-26 — Remote Co-op Helper v1 (Sunshine + Moonlight 설치 도우미)
+
+| # | 변경 | 위치 | 비고 |
+|---|---|---|---|
+| 118 | Remote Co-op Helper 신규 | `remote-coop/src` (16 파일) · `Launcher\DragonCrownRemoteCoopSetup.exe` (63.24 MB) | .NET 8 WPF x64 self-contained single-file. HOST/GUEST 역할 UI + CLI(`--host/--guest/--status/--diag/--test-pad/--resolve/--download/--restore`) |
+| 119 | 릴리스 리졸버/다운로드 보안 | `ReleaseResolver` · `Downloader` · `SecurityVerifier` | GitHub 최신 stable 만(draft/prerelease 제외), 버전 하드코딩 없음. HTTPS + owner/repo + 에셋 allow-list + SHA256(GitHub digest 비교) + Authenticode. 실측: Sunshine v2026.914.233613 MSI 32.1MB 다운로드 → digest 일치 + Authenticode valid(David Lane 서명) |
+| 120 | HOST 진단/설정 | `SunshineManager` · `GamepadDetector` · `HostSetup` | 다중 경로 설치 탐지, 서비스/WebUI/프로세스, 가상패드 백엔드(Virtual HID 유료 / ViGEmBus 무료 legacy) 판별, controller-only 정책(controller=enabled·gamepad=x360·keyboard/mouse=disabled), XInput 원격 패드 테스트 |
+| 121 | RPCS3 P2 연동 | `Rpcs3Integration` | 루트 자동 탐지(하드코딩 없음), P1/P2 핸들러 읽기, `[SET P2 TO XINPUT]` (백업 후 적용·검증, **P1 절대 불변**) |
+| 122 | GUEST 설정 | `MoonlightManager` · `GuestSetup` | Moonlight 설치/실행/컨트롤러 감지/HOST 주소/페어링 안내. **RPCS3·펌웨어·게임 불필요**. PIN/비밀번호 저장·로그 금지 |
+| 123 | 백업/복구 | `BackupManager` | `Backups\RemoteCoop\<시각>\` (Sunshine config · RPCS3 input · helper 설정). 변경 전 자동 백업, 복원 전 재백업. savedata/trophy 미접촉 |
+| 124 | Failure Classification | `Diagnostics` | 14개 분류 코드(SUNSHINE_* / GAMEPAD_* / MOONLIGHT_* / GUEST_* / RPCS3_P2_*) — 항목 수 런타임 계산 |
+| 125 | 런처 연동 | `launcher/src/MainWindow.xaml.cs` | Remote Co-op 패널에 Helper 상태(Sunshine/Gamepad/P2/Guest Pad/READY) + `SETUP HOST` / `GUEST SETUP` / `TEST REMOTE PAD` / `START REMOTE CO-OP` |
+| 126 | 문서/패키지 | `Docs\REMOTE_COOP_SETUP.md` · `REMOTE_COOP_ACCEPTANCE.md` · 공유 패키지(118.26MB) | E2E 는 2대 PC 테스트 전까지 PENDING 유지 |
 ## 2026-09-26 — Phase 1 RC2 (이식성 수정 · RPCS3 자동 업데이트 대응 · 공유 패키지 재정비)
 
 | # | 변경 | 위치 | 비고 |
