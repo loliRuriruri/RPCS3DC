@@ -7,7 +7,7 @@
 === DRAGON'S CROWN PC EDITION — PHASE 1 CLOSEOUT ===
 
 START SHA: de1281516e542ef59abd5c27251e9242da6daeab
-END SHA:   763a845ff7260fe322290eb51bda8294ce6bf9b9  (tag v1.0.0-rc1)
+END SHA:   tag `v1.0.0-rc1` 기준 커밋 (`git log --oneline -1`)
 
 P0
 [PASS] 300/400 GUI profile switching
