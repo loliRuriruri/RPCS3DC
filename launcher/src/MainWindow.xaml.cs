@@ -51,6 +51,7 @@ namespace DragonCrownProEnhanced
                 $"RESHADE   {ck(_p.ReShadeVersion() != "없음")} {_p.ReShadeVersion()} · {(_p.ReShadeEnabled ? "ON (Pro Enhanced)" : "OFF (Standard)")} · Silent {(_p.ReShadeSilent ? "ON" : "OFF")}",
                 $"PAD 1/2   {ck(p1 != "Null" && p1 != "없음")} {p1}  /  {ck(p2 != "Null" && p2 != "없음")} {p2}",
                 $"NETWORK   {dot(_p.RpcnConfigured())} RPCN Configured {(_p.RpcnConfigured() ? "YES" : "NO")} · Login {_p.RpcnLoginStatus()} · Sunshine {_p.SunshineStatus()}",
+                $"RPCS3 GUI {Rpcs3UiBridge.StatusLine(_p)}",
                 $"CHEATS    {dot(cp.CheatEnabled == "YES" || cp.PatchEnabled == "YES")} {enabledState} (cheats {cp.CheatEnabled} / patches {cp.PatchEnabled})",
             });
             string resShort = _p.ResolutionShort;
@@ -92,6 +93,29 @@ namespace DragonCrownProEnhanced
             try
             {
                 if (_game != null && !_game.HasExited) { Append("이미 게임이 실행 중입니다."); return; }
+
+                // duplicate-instance guard: RPCS3 GUI already running -> warn (never kill/restart it)
+                var running = Rpcs3UiBridge.ProjectProcesses(_p);
+                if (running.Count > 0)
+                {
+                    Append($"주의: RPCS3 가 이미 실행 중입니다 (pid {string.Join(", ", running.Select(x => x.Id))}). " +
+                           "두 번째 인스턴스는 설정/저장 충돌을 일으킬 수 있습니다.");
+                    if (App.CliMode)
+                    {
+                        _p.Log("launch: duplicate instance warning (already running) - CLI continues");
+                    }
+                    else
+                    {
+                        var r = MessageBox.Show(
+                            "RPCS3 가 이미 실행 중입니다.\n\n" +
+                            "두 번째 인스턴스를 실행하면 설정/저장 충돌이 발생할 수 있습니다.\n" +
+                            "기존 RPCS3 창을 종료한 뒤 실행하는 것을 권장합니다.\n\n" +
+                            "계속할까요? (기존 RPCS3 는 종료/재시작하지 않습니다)",
+                            label + " — RPCS3 already running", MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No);
+                        if (r != MessageBoxResult.Yes) { Append("실행 취소 (기존 RPCS3 유지)"); return; }
+                    }
+                }
+
                 _p.SaveSettings();
                 var proc = _p.Launch(profile, knownGood, borderless, forceReShadeOff);
                 _game = proc;
@@ -155,8 +179,8 @@ namespace DragonCrownProEnhanced
                 "현재 1P: " + _p.ControllerHandler(1) + " / 2P: " + _p.ControllerHandler(2)));
             panel.Children.Add(PanelButton("RPCS3 게임패드 설정 열기", () =>
             {
-                Process.Start(new ProcessStartInfo(_p.Rpcs3Exe) { WorkingDirectory = _p.Rpcs3Dir, UseShellExecute = true });
-                Append("RPCS3 GUI → 게임패드 아이콘에서 1P/2P 를 설정하세요.");
+                OpenRpcs3Settings(Rpcs3SettingsKind.Controller);
+                Append("RPCS3 GUI → 패드 설정에서 1P/2P 를 지정하세요 (기존 RPCS3 창을 재사용합니다).");
             }));
             panel.Children.Add(PanelButton("Local 2P 로 실행 (" + _p.ResolutionShort + ")", () =>
             {
@@ -217,6 +241,8 @@ namespace DragonCrownProEnhanced
             string pad = val("HOST_VIRTUAL_PAD", "WAITING FOR GUEST");
             string ready = val("HOST_READY", "NO");
             string guest = val("HOST_GUEST", "WAITING");
+            string rpcs3 = Rpcs3UiBridge.StatusLine(_p);
+            bool p2ok = _p.ControllerHandler(2).Equals("XInput", StringComparison.OrdinalIgnoreCase);
 
             var w = MakePanel("MULTIPLAYER — Remote Co-op (Sunshine + Moonlight)", 600);
             var panel = new StackPanel { Margin = new Thickness(14) };
@@ -226,16 +252,37 @@ namespace DragonCrownProEnhanced
                 "Status: IMPLEMENTED / E2E TEST PENDING (2대 PC 필요)\n\n" +
                 "Helper 상태 (DragonCrownRemoteCoopSetup.exe):\n" +
                 $"  Sunshine      : {sun}\n" +
-                $"  Gamepad       : {backend}\n" +
+                $"  Gamepad       : {backend}   (FREE 경로: ViGEmBus + gamepad=x360 — Virtual HID 유료는 선택)\n" +
+                $"  RPCS3         : {rpcs3}\n" +
+                $"  Player 1      : {_p.ControllerHandler(1)}\n" +
                 $"  Player 2      : {p2}\n" +
                 $"  Guest Pad     : {pad}   Guest: {guest}\n" +
                 $"  HOST READY    : {ready}\n\n" +
                 "절차:\n" +
-                "1) HOST: [SETUP HOST] → Sunshine 설치/실행 + Controller-only + P2 XInput\n" +
+                "1) HOST: [SETUP HOST] → Sunshine 설치/실행 + Controller-only + (무료) ViGEmBus + P2 XInput\n" +
                 "2) GUEST(친구 PC): [GUEST SETUP] → Moonlight 설치 + 패드 + HOST 페어링\n" +
                 "3) 친구가 Moonlight Desktop 스트림 접속 → [TEST REMOTE PAD]\n" +
                 "4) [START REMOTE CO-OP] → 게임 실행 → 2P Start 로 합류"));
             panel.Children.Add(PanelButton("SETUP HOST (DragonCrownRemoteCoopSetup.exe --host)", () => RunHelper("--host")));
+            panel.Children.Add(PanelButton("RPCS3 CONTROLLER SETTINGS (기존 RPCS3 재사용)", () => OpenRpcs3Settings(Rpcs3SettingsKind.Controller)));
+            if (!p2ok)
+            {
+                panel.Children.Add(PanelButton("FIX P2 TO XINPUT (백업 후 적용)", () =>
+                {
+                    try
+                    {
+                        if (!File.Exists(HelperExe)) { MessageBox.Show("Helper 가 없습니다."); return; }
+                        string outFile = Path.Combine(_p.LogDir, "remote_coop_fixp2.txt");
+                        var psi = new ProcessStartInfo(HelperExe, "--fix-p2 \"" + outFile + "\"")
+                        { UseShellExecute = false, CreateNoWindow = true, WorkingDirectory = Path.GetDirectoryName(HelperExe) };
+                        using var proc = Process.Start(psi);
+                        proc.WaitForExit(20000);
+                        MessageBox.Show(File.Exists(outFile) ? File.ReadAllText(outFile) : "(결과 없음 — Logs\\remote_coop_helper.log 확인)", "FIX P2 TO XINPUT");
+                    }
+                    catch (Exception ex) { MessageBox.Show(ex.Message); }
+                    RefreshStatus();
+                }));
+            }
             panel.Children.Add(PanelButton("GUEST SETUP 안내 (친구 PC용 --guest)", () => RunHelper("--guest")));
             panel.Children.Add(PanelButton("TEST REMOTE PAD (8초 입력 테스트)", () =>
             {
@@ -318,8 +365,7 @@ namespace DragonCrownProEnhanced
                 IsChecked = true
             };
             panel.Children.Add(cbSafe);
-            panel.Children.Add(PanelButton("RPCS3 GUI 열기 (RPCN 설정)", () =>
-                Process.Start(new ProcessStartInfo(_p.Rpcs3Exe) { WorkingDirectory = _p.Rpcs3Dir, UseShellExecute = true })));
+            panel.Children.Add(PanelButton("RPCN ACCOUNT SETTINGS (RPCS3 재사용)", () => OpenRpcs3Settings(Rpcs3SettingsKind.Rpcn)));
             panel.Children.Add(PanelButton("RPCN Online 실행", () =>
             {
                 bool safe = cbSafe.IsChecked == true;
@@ -332,6 +378,36 @@ namespace DragonCrownProEnhanced
             }));
             w.Content = panel;
             w.ShowDialog();
+        }
+
+        // ------------------------------------------------------------- RPCS3 설정 (bridge)
+        private void OpenRpcs3Settings(Rpcs3SettingsKind kind)
+        {
+            try
+            {
+                var (ok, msg) = Rpcs3UiBridge.OpenSettings(_p, kind);
+                Append("RPCS3: " + msg.Replace("\r\n", " | ").Replace("\n", " | "));
+                if (!ok) MessageBox.Show(msg, "RPCS3 설정", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex) { Append("RPCS3 설정 오류: " + ex.Message); MessageBox.Show(ex.Message); }
+            RefreshStatus();
+        }
+
+        private void BtnRpcs3Controller_Click(object sender, RoutedEventArgs e) => OpenRpcs3Settings(Rpcs3SettingsKind.Controller);
+        private void BtnRpcs3Rpcn_Click(object sender, RoutedEventArgs e) => OpenRpcs3Settings(Rpcs3SettingsKind.Rpcn);
+        private void BtnRpcs3General_Click(object sender, RoutedEventArgs e) => OpenRpcs3Settings(Rpcs3SettingsKind.General);
+        private void BtnRpcs3Open_Click(object sender, RoutedEventArgs e) => OpenRpcs3Settings(Rpcs3SettingsKind.MainWindow);
+
+        private void BtnRpcs3Refresh_Click(object sender, RoutedEventArgs e)
+        {
+            RefreshStatus();
+            var procs = Rpcs3UiBridge.ProjectProcesses(_p);
+            string detail = procs.Count == 0
+                ? "RPCS3 가 실행 중이 아닙니다."
+                : $"실행 중: pid {string.Join(", ", procs.Select(x => x.Id))}" +
+                  (Rpcs3UiBridge.IsGameRunning(_p) ? " · 게임 실행 중 (설정 일부는 게임 재실행 후 적용)" : "");
+            Append("RPCS3 상태: " + detail);
+            MessageBox.Show(detail, "RPCS3 상태");
         }
 
         // ------------------------------------------------------------- SETTINGS
@@ -389,8 +465,7 @@ namespace DragonCrownProEnhanced
             panel.Children.Add(Info("1P: " + _p.ControllerHandler(1) + "\n2P: " + _p.ControllerHandler(2) +
                 "\n\nLocal / Remote Co-op 에는 2P 패드 설정이 필요합니다.\nRPCS3 GUI → 게임패드 아이콘에서 Player 2 를 지정하세요.\n" +
                 "패드 설정은 RPCS3 가 관리하며 이 런처는 값을 수정하지 않습니다."));
-            panel.Children.Add(PanelButton("RPCS3 게임패드 설정 열기", () =>
-                Process.Start(new ProcessStartInfo(_p.Rpcs3Exe) { WorkingDirectory = _p.Rpcs3Dir, UseShellExecute = true })));
+            panel.Children.Add(PanelButton("RPCS3 게임패드 설정 열기", () => OpenRpcs3Settings(Rpcs3SettingsKind.Controller)));
             panel.Children.Add(PanelButton("입력 설정 폴더 열기", () =>
                 OpenPath(Path.Combine(_p.Rpcs3Dir, "config", "input_configs"))));
             panel.Children.Add(PanelButton("새로 고침", () => { RefreshStatus(); MessageBox.Show("1P: " + _p.ControllerHandler(1) + "\n2P: " + _p.ControllerHandler(2)); }));
@@ -431,8 +506,7 @@ namespace DragonCrownProEnhanced
                 if (!File.Exists(script)) { MessageBox.Show("스크립트가 없습니다: " + script); return; }
                 Process.Start(new ProcessStartInfo("cmd.exe", "/c \"" + script + "\"") { UseShellExecute = true });
             }));
-            panel.Children.Add(PanelButton("RPCS3 GUI 열기 (RPCN 설정)", () =>
-                Process.Start(new ProcessStartInfo(_p.Rpcs3Exe) { WorkingDirectory = _p.Rpcs3Dir, UseShellExecute = true })));
+            panel.Children.Add(PanelButton("RPCN ACCOUNT SETTINGS (RPCS3 재사용)", () => OpenRpcs3Settings(Rpcs3SettingsKind.Rpcn)));
             panel.Children.Add(PanelButton("네트워크 진단 (RPCN 서버 도달성)", () =>
             {
                 var psi = new ProcessStartInfo("powershell",
