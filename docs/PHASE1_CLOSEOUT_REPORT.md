@@ -1,12 +1,13 @@
 # PHASE 1 CLOSEOUT REPORT — Dragon's Crown PC Edition
 
 작성일: 2026-09-26 · 태그: `v1.0.0-rc1` (코드 마감 + 자동 검증 완료)
+런처 바이너리: `DragonCrownProEnhanced.exe` (63.24 MB) SHA256 `27CDF02D8B30E6937C9666EF61B032E1A4204AD31D2A050A6484FD1A4FF0FCB4`
 
 ```text
 === DRAGON'S CROWN PC EDITION — PHASE 1 CLOSEOUT ===
 
 START SHA: de1281516e542ef59abd5c27251e9242da6daeab
-END SHA:   (커밋 후 기록)
+END SHA:   763a845ff7260fe322290eb51bda8294ce6bf9b9  (tag v1.0.0-rc1)
 
 P0
 [PASS] 300/400 GUI profile switching

@@ -37,14 +37,14 @@
 
 | 산출물 | 경로 | 크기 | 해시 |
 |---|---|---|---|
-| GUI 런처 | `E:\PS3\Launcher\DragonCrownProEnhanced.exe` | 63.24 MB | SHA256 `BF1A98EB2E96BA24B66EF094BA22672AD7D1DB407D80507A88ECA33F2FB2C511` |
+| GUI 런처 | `E:\PS3\Launcher\DragonCrownProEnhanced.exe` | 63.24 MB | SHA256 `27CDF02D8B30E6937C9666EF61B032E1A4204AD31D2A050A6484FD1A4FF0FCB4` (Closeout 재빌드) |
 | 런처 소스 | `E:\PS3\Launcher\src\` (7 파일) + GitHub `launcher/src` | — | — |
 | RPCS3 KnownGood | `E:\PS3\RPCS3\KnownGood\` | 874 MB(RPCS3 전체) | `rpcs3.exe` SHA256 원본과 동일 |
 | ReShade (설치본) | `C:\ProgramData\ReShade\ReShade64.dll` | 5,581,824 B | 6.8.0.1 / SHA256 `FFCAB1B2…E181` (ZERO-BANNER 자체 빌드) |
 | ReShade (공식 백업) | `E:\PS3\Mods_Patches\ReShade\Official_Backup\ReShade64.dll` | 5,592,064 B | 6.8.0.2155 / SHA256 `0CEE63F9…94F7` |
 | ZERO-BANNER 빌드 | `…\ZeroBanner\src\bin\x64\Release\ReShade64.dll` | 5,581,824 B | SHA256 `FFCAB1B2…E181` (설치본과 동일) |
 | 공유 패키지 | `E:\PS3\Backups\DragonCrown_PRO_Enhanced_Setup.zip` | 58.02 MB | 개인정보/게임파일 미포함 검사 완료 |
-| GitHub | https://github.com/loliRuriruri/RPCS3DC | 59 파일 | 최신 커밋 `9ece272` |
+| GitHub | https://github.com/loliRuriruri/RPCS3DC | 파일 수는 git tree 기준 | 최신 `763a845` · tag `v1.0.0-rc1` |
 
 ---
 
