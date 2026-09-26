@@ -12,11 +12,15 @@
 | 구분 | 항목 | 상태 |
 |---|---|---|
 | BUILD | .NET 8 빌드 / single-file exe (`Launcher\DragonCrownRemoteCoopSetup.exe`, 63.24 MB) | PASS |
+| FREE | Sunshine/Moonlight/ViGEmBus = 무료 권장 경로, Virtual HID = 선택(premium) — UI/문서 반영 | PASS |
+| FREE | Dragon's Crown Ready 판정 = ViGEmBus + `gamepad=x360` (무료 경로만으로 READY) | PASS |
 | HOST | 릴리스 리졸버 (Sunshine v2026.914.233613 / Moonlight v6.1.0 / ViGEmBus v1.22.0) | PASS |
 | HOST | 공식 MSI 다운로드 + SHA256 + GitHub digest 일치 + Authenticode valid | PASS |
 | HOST | Sunshine 설치 감지 / 서비스 / Web UI / 가상패드 백엔드 감지 로직 | PASS (미설치 상태 감지) |
 | HOST | Controller-only 정책 적용 코드 / RPCS3 P2 감지 / 백업·복구 | PASS (코드 + 상태 표시) |
 | GUEST | Moonlight 감지 / 컨트롤러 감지 / HOST 주소 저장 / CLI | PASS |
+| RPCS3 | 중복 인스턴스 금지 + 설정 바로가기 (UI Automation) — CASE A~E | PASS (아래 §G) |
+| RPCS3 | 자동 업데이트 차단 실측 (20053, 2회 재실행) | PASS (아래 §H) |
 | E2E | 2대 PC 실제 연결 | **PENDING** |
 
 ---
@@ -95,6 +99,34 @@ Clean Windows 기준. 이 PC 에서는 이미 RPCS3 환경이 있으므로 "Clea
 | D5 | Backup / Restore | 런처 TOOLS | PASS (기존 기능 유지) |
 | D6 | P1 보존 | input config 확인 | PASS (P1 미변경) |
 
+## G. RPCS3 설정 / 중복 인스턴스 Acceptance (§21)
+
+실측 (2026-09-26, 1대 PC):
+
+| CASE | 시나리오 | 기대 | 결과 |
+|---|---|---|---|
+| A | RPCS3 종료 상태 → Launcher → Controller Settings | 프로세스 1개 + 설정창 | **PASS** (`--rpcs3 controller`: started single new instance, UIA `RESULT=ok|Pads`, `Gamepad Settings` 창 열림) |
+| B | RPCS3 메인창 실행 중 → Controller Settings | 기존 프로세스 재사용, 개수 1 유지, duplicate 경고 없음 | **PASS** (log `reuse pid=2296`, 프로세스 1개 유지, `Gamepad Settings` 열림) |
+| C | Dragon's Crown 실행 중 → RPCS3 Settings | 두 번째 인스턴스 없음 + 기존 창 foreground + 설정창 또는 안전 fallback | **PASS** (프로세스 1개 유지, `gameRunning=True`, 게임 중 툴바 숨김 → 자동 열기 실패 시 foreground + "게임 종료 후 Pads" 안내) |
+| D | 버튼 10회 빠른 클릭 (burst) | RPCS3 최대 1개 | **PASS** (`--rpcs3 burst` → `processes=1`) |
+| E | 다른 폴더 RPCS3(KnownGood) 실행 중 | 우리 `<ROOT>\RPCS3\rpcs3.exe` 와 구분 | **PASS** (`--rpcs3 status` → `○ not running`; `--rpcs3 open` → 우리 것만 실행, KnownGood pid 유지) |
+
+추가: PLAY 시 RPCS3 GUI 가 이미 실행 중이면 **경고(기본 No)** 후 진행 여부를 묻고,
+기존 RPCS3 를 kill/restart 하지 않습니다.
+
+## H. RPCS3 자동 업데이트 차단 실측
+
+| 항목 | 결과 |
+|---|---|
+| 설정 변경 | `GuiConfigs\CurrentSettings.ini` 의 `[Meta] checkUpdateStart=false` **1줄만** 추가 (백업 대비 diff = 1줄, BOM/CRLF 유지) |
+| 기준 빌드 | `0.0.42-20053-38eba804` (C:\ 원본 = KnownGood = 현재, SHA256 F3C58A95…) |
+| 재실행 1회차 | 창 제목 20053 · exe 해시 불변 · `update_history.log` 신규 없음 · 정상 종료 후에도 설정 키 잔존 |
+| 재실행 2회차 | 동일 (20053 유지, 신규 업데이트 없음) |
+| 결론 | **PASS** — 설정 파일 수정만이 아니라 **2회 재실행 실측**으로 확인 |
+
+> 참고: 업데이트 사고(20053→20058 @18:48, 20053→20063 @21:45)는 차단 조치 이전에 발생했으며,
+> 차단 후에는 신규 업데이트가 없습니다.
+
 ## E. 결과 요약 템플릿
 
 ```text
@@ -103,6 +135,8 @@ HOST  A1~A13   : PASS / FAIL / PENDING (각 항목)
 GUEST B1~B7    : PASS / FAIL / PENDING
 E2E   C1~C12   : PASS / FAIL / PENDING
 REG   D1~D6    : PASS / FAIL / PENDING
+RPCS3 settings A~E : PASS / FAIL / PENDING (각 CASE)
+FREE PATH          : PASS / FAIL / PENDING
 날짜 / 담당 :
 비고 (실패 시 분류 코드: SUNSHINE_* / GAMEPAD_* / MOONLIGHT_* / GUEST_* / RPCS3_P2_*)
 ```
