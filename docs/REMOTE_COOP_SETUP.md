@@ -25,6 +25,22 @@ HOST PC (게임 실행)
 
 ---
 
+## 0. FREE PATH (권장 구성 — 추가 비용 없음)
+
+| 구성 | 라이선스 | Dragon's Crown Remote 2P |
+|---|---|---|
+| **Sunshine** | **FREE** | HOST 스트리밍 (필수) |
+| **Moonlight** | **FREE** | GUEST 클라이언트 (필수) |
+| **ViGEmBus + gamepad=x360** | **FREE** (legacy/EOL) | 가상 Xbox 360 / XInput 패드 → RPCS3 Player 2 (권장) |
+| Virtual HID Driver | 유료 (연 $14.99 / 평생 $49.99) | **선택(premium)** — Dragon's Crown 에는 **필요하지 않음** |
+
+* Dragon's Crown 은 이미 **P1=DualSense, P2=XInput** 로 Local 2P 가 검증되어 있으므로,
+  **무료 ViGEmBus 의 Xbox 360/XInput 가상패드면 충분**합니다.
+* Virtual HID 라이선스가 없어도 설치 흐름은 **FAIL/STOP 되지 않습니다** (WARNING/OPTIONAL).
+* Helper 는 Virtual HID 를 **감지만** 하며 자동 활성화/구매를 유도하지 않습니다.
+
+---
+
 ## 1. 산출물
 
 | 파일 | 설명 |
@@ -58,8 +74,8 @@ DragonCrownRemoteCoopSetup.exe            GUI (HOST 기본)
 
 | 항목 | 필수 | 비고 |
 |---|---|---|
-| Sunshine | ✅ | 공식 MSI (Helper 가 최신 stable 릴리스를 자동 해석/다운로드/검증) |
-| Gamepad backend | ✅ | **Virtual HID Driver**(유료 라이선스) 또는 **ViGEmBus**(무료 legacy/EOL) |
+| Sunshine | ✅ | 공식 MSI (Helper 가 최신 stable 릴리스를 자동 해석/다운로드/검증) · **무료** |
+| Gamepad backend | ✅ | **FREE: ViGEmBus + gamepad=x360** (권장) · Virtual HID Driver(유료)는 선택 |
 | RPCS3 + 게임 | ✅ | 기존 Phase 1 설치 그대로 |
 | 컨트롤러 (P1) | ✅ | 기존 HOST 패드 — **절대 변경되지 않음** |
 
@@ -73,7 +89,7 @@ DragonCrownRemoteCoopSetup.exe            GUI (HOST 기본)
    - Controller-only 정책 적용:  controller=enabled / gamepad=x360 / keyboard=disabled / mouse=disabled
    - Sunshine 실행 + Web UI(https://localhost:47990) 열기
 3) Sunshine Web UI 에서 본인 계정 생성 (Helper 는 비밀번호를 저장/출력하지 않음)
-4) [INSTALL FREE LEGACY DRIVER (ViGEmBus)]  ← Virtual HID Driver 가 없을 때만, 사용자가 직접 선택
+4) [INSTALL FREE GAMEPAD DRIVER (ViGEmBus)]  ← 무료·권장. Virtual HID(유료)는 없어도 진행 가능
    - 공식 nefarius/ViGEmBus release 에서만 다운로드, legacy/EOL 안내 표시
 5) [SET P2 TO XINPUT]  ← Player 2 가 Null 일 때만. input config 자동 백업 후 적용
    - Player 1 은 어떤 경우에도 변경하지 않습니다.
@@ -85,14 +101,45 @@ DragonCrownRemoteCoopSetup.exe            GUI (HOST 기본)
 
 ```text
 Sunshine          [Not Installed / Installed / Running]  Service / WebUI
-Gamepad Backend   [Missing / ViGEmBus / Virtual HID]
+Gamepad Backend   [FREE: ViGEmBus x.x  /  Virtual HID(premium)  /  Missing]
 Controller Input  [ON/OFF]   Keyboard/Mouse [OFF=controller-only]
 Virtual Pad       [WAITING FOR GUEST / READY]
 RPCS3             [Detected]
 Player 1 / 2      [DualSense / XInput]
 Guest             [Waiting / Connected]
 HOST READY        [READY / NOT READY]
+
+GAMEPAD BACKEND
+  [ FREE — Recommended for Dragon's Crown ]
+    ViGEmBus       ✓/✗   Xbox 360 / XInput · Free · Legacy / EOL · Enough for Remote 2P
+  [ PREMIUM — Optional ]
+    Virtual HID    ✓/✗   Advanced Sunshine driver · Paid license · NOT REQUIRED
+  Dragon's Crown Ready: ✓/✗   gamepad=x360
 ```
+
+### 3.4 RPCS3 설정 바로가기 (중복 인스턴스 금지)
+
+메인 런처의 **RPCS3 설정** 그룹과 Helper 에서 RPCS3 설정으로 바로 진입할 수 있습니다.
+별도로 `rpcs3.exe` 를 실행하지 **않습니다**.
+
+```text
+[ 패드 / 컨트롤러 설정 ]   → 기존 RPCS3 의 toolbar "Pads"  (UI Automation)
+[ RPCN 계정 설정 ]         → 기존 RPCS3 의 toolbar "RPCN"
+[ 전체 설정 ]              → 기존 RPCS3 의 toolbar "Config"
+[ RPCS3 메인 창 ]          → 기존 창을 앞으로 (없으면 1회만 실행)
+[ 상태 새로고침 ]          → 실행 여부/게임 실행 여부 표시
+```
+
+동작 규칙:
+
+* 프로젝트 RPCS3(`<ROOT>\RPCS3\rpcs3.exe`)가 실행 중이면 **절대 새 인스턴스를 만들지 않고** 기존 창을 재사용합니다.
+  (경로가 다른 RPCS3 설치는 대상이 아닙니다 — KnownGood/타 설치본과 구분)
+* 실행 중이 아니면 **1회만** 실행하고 메인 창을 기다립니다 (버튼 연타에도 1개 — 세마포어 보호).
+* 설정 창은 **UI Automation 으로 툴바 버튼을 Invoke** 합니다 (좌표 클릭 금지, 다국어 fallback 포함).
+* **게임 실행 중에는 RPCS3 가 툴바를 숨기므로** 자동 열기가 실패할 수 있습니다.
+  이 경우에도 새 인스턴스를 만들지 않고, 기존 창을 앞으로 가져온 뒤
+  "게임 종료 후 toolbar(Pads/RPCN/Config) 사용" 안내를 표시합니다.
+* 게임 실행 중 변경한 일부 설정은 **게임 재실행 후 적용**됩니다.
 
 ## 4. GUEST (친구 PC) 설정
 
@@ -159,9 +206,13 @@ HOST READY        [READY / NOT READY]
 
 ## 9. 알려진 제약 (v1)
 
-* **Virtual HID Driver 는 유료 라이선스**(연 $14.99 / 평생 $49.99)가 필요하며, 라이선스 상태는 Sunshine Web UI 에서만 확인됩니다.
-  Helper 는 설치 여부만 감지하고 **자동 활성화하지 않습니다.**
-* **ViGEmBus 는 legacy/EOL**(저장소 archived 2023-11)이며 Xbox 360 / DS4 만 지원합니다. 무료 fallback 입니다.
+* **Dragon's Crown 권장 경로는 무료**입니다: Sunshine(FREE) + Moonlight(FREE) + ViGEmBus(FREE) + `gamepad=x360`.
+* **Virtual HID Driver 는 선택(premium)** 이며 유료 라이선스(연 $14.99 / 평생 $49.99)가 필요합니다.
+  라이선스 상태는 Sunshine Web UI 에서만 확인되며, Helper 는 설치 여부만 감지하고 **자동 활성화/구매를 유도하지 않습니다.**
+  Virtual HID 가 없어도 설치 흐름은 FAIL/STOP 되지 않습니다.
+* **ViGEmBus 는 legacy/EOL**(저장소 archived 2023-11)이며 Xbox 360 / DS4 만 지원합니다. 무료 경로의 기본값입니다.
+* **게임 실행 중에는 RPCS3 가 툴바를 숨겨** 설정 창 자동 열기가 실패할 수 있습니다.
+  안전 fallback(기존 창 foreground + 수동 안내)을 사용하며 **새 인스턴스를 만들지 않습니다.**
 * v1 은 **Desktop 스트림**을 사용합니다 (앱 직접 실행 항목을 자동 등록하지 않음).
 * 외부 인터넷 자동 구성(포트포워딩/UPnP/Tailscale)은 하지 않습니다.
 * Sunshine/Moonlight 제거는 공식 uninstaller 를 사용합니다 (드라이버 파일 임의 삭제 금지).

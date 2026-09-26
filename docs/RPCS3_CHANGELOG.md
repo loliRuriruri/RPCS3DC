@@ -158,6 +158,18 @@
 
 ---
 
+## 2026-09-26 — Remote Co-op Helper v1.1 (FREE PATH + RPCS3 SETTINGS BRIDGE)
+
+| # | 변경 | 위치 | 비고 |
+|---|---|---|---|
+| 127 | **FREE 경로 명확화** | Helper UI · 진단 · 문서 | Sunshine/Moonlight/ViGEmBus = **무료**, Virtual HID Driver = **선택(premium, NOT REQUIRED)**. Dragon's Crown Ready = `ViGEmBus + gamepad=x360` (무료 경로만으로 READY). Virtual HID 부재는 WARNING/OPTIONAL — FAIL/STOP 아님 |
+| 128 | RPCS3 설정 허브 | 런처 `RPCS3 설정` 그룹 | [패드/컨트롤러] [RPCN 계정] [전체 설정] [RPCS3 메인 창] [상태 새로고침] — 기존 RPCS3 창 재사용 |
+| 129 | `Rpcs3UiBridge` / `Rpcs3Automation` | `launcher/src` | 경로 기반 프로세스 매칭(MainModule, 접근 실패 시 fallback+로그), SemaphoreSlim 중복 방지, ShowWindow/SetForegroundWindow/BringWindowToTop, **UI Automation 툴바 Invoke**(Pads/RPCN/Config, 다국어 fallback, 좌표 클릭 금지) |
+| 130 | 중복 인스턴스 금지 **실측** | CASE A~E | A: 1개 시작 + Gamepad Settings 열림 / B: 재사용(1 유지, `reuse pid`) / C: 게임 실행 중에도 1개 유지 + 안전 fallback / D: 10회 burst = 1 / E: KnownGood(다른 폴더) 구분 |
+| 131 | PLAY 중복 경고 | 런처 `Launch()` | RPCS3 GUI 실행 중 PLAY 시 경고(기본 No). 기존 RPCS3 **kill/restart 금지** |
+| 132 | RPCS3 자동 업데이트 차단 **실측** | `[Meta] checkUpdateStart=false` | 최소 1줄 변경(백업 대비 diff 1줄) · 2회 재실행 검증: 20053 유지, exe 해시 불변, update_history 신규 없음, 정상 종료 후 키 잔존 |
+| 133 | 런처 UI 확장 | `MainWindow.xaml` | 3열 레이아웃 + RPCS3 설정 그룹, Remote Co-op 패널에 RPCS3 상태/컨트롤러 설정/P2 픽스 버튼 |
+| 134 | Helper CLI | `--fix-p2 [file]` | 백업 후 Player 2 XInput 적용(런처에서 호출). P1 불변 |
 ## 2026-09-26 — Remote Co-op Helper v1 (Sunshine + Moonlight 설치 도우미)
 
 | # | 변경 | 위치 | 비고 |
