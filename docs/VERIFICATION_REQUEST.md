@@ -127,7 +127,7 @@
 
 | # | 주장 | 증거 | 상태 |
 |---|---|---|---|
-| H1 | Diagnostics 24항목 + 원인 안내 | `Logs\diagnostics.txt` (예: Controller 2 Null → 2P 필요, Sunshine 미설치 → 설치 안내) | 검증됨 |
+| H1 | Diagnostics 전체 항목(런타임 카운트, Closeout 시점 35) + 원인 안내 | `Logs\diagnostics.txt` (예: Controller 2 Null → 2P 필요, Sunshine 미설치 → 설치 안내) | 검증됨 |
 | H2 | 설정 백업/복원 | `Backups\<시각>_<라벨>` (config·custom config·ReShade.ini·CurrentSettings·프로필·입력설정), 복원 전 재백업 | 검증됨 |
 | H3 | Reset Graphics/Multiplayer | AF16·VSync Full·VBlank60·FrameSkip Off / RPCN On·UPNP Off·Clans Off 복원 실측 | 검증됨 |
 | H4 | 세이브는 Reset/복원 대상이 아님 | 코드상 savedata 경로 접근 없음(백업 기능만) | 검증됨(코드) |
@@ -149,7 +149,7 @@ Get-ChildItem "E:\PS3\Profiles\Dragons_Crown" -Directory | ForEach-Object {
   if (Test-Path $p) { "--- $($_.Name) ---"; Select-String -Path $p -Pattern '^  (Resolution Scale|Anisotropic Filter Override|VSync Mode|Vblank Rate|Enable Frame Skip|PSN status|Stretch To Display Area):' | ForEach-Object { $_.Line.Trim() } }
 }
 
-# 4) 진단 (24항목)
+# 4) 진단 (전체 항목 — 런타임 카운트)
 & "E:\PS3\Launcher\DragonCrownProEnhanced.exe" --diag "E:\PS3\Logs\diag_recheck.txt"; Start-Sleep 10; Get-Content "E:\PS3\Logs\diag_recheck.txt"
 
 # 5) Standard 실행(ReShade OFF 확인) — ReShade.log 크기 불변
@@ -189,7 +189,7 @@ powershell -File "E:\PS3\Tools\inspect_windows.ps1"   # rect=3840x2160, style 0x
 4. **Borderless는 창모드 변형**이므로 독점 전체화면과 입력 지연/전체화면 최적화 동작이 다를 수 있다(60 Hz 패널).
 5. **`Launcher` 폴더에 빌드 중간 산출물**(`src\bin`, `src\obj`)이 남아 있어 폴더 크기가 227 MB이다(재빌드용, 삭제 가능).
 6. **공유 패키지(58 MB)는 로컬 검증만** 했고 실제 타 PC 설치 테스트는 하지 않았다.
-7. **RPCN은 공식 목록상 Dragon's Crown 1.09가 전 항목 Untested** 이며, 커뮤니티에는 접속 실패 보고(#15283)가 있다 → “동작 보장”이 아니라 “가드/진단 구현”으로 표기해야 한다.
+7. **RPCN 은 `RPCN_PARTIAL` 로 분류한다**(연결 기능 존재 · 친구 기반 로비/합류 사례 · 실제 Match 부분 지원 · Random matchmaking 신뢰 안 함 · Connecting 멈춤 사례). “RPCN Guaranteed” 로 표기하지 않으며, 커뮤니티 접속 실패 보고(#15283)가 있다 → “동작 보장”이 아니라 “가드/진단 구현”으로 표기해야 한다.
 8. **치트는 주소 미확보 상태**이므로 “Cheat 기능 완성”이 아니라 “도구/절차 완성”이다.
 
 ---
@@ -202,3 +202,25 @@ powershell -File "E:\PS3\Tools\inspect_windows.ps1"   # rect=3840x2160, style 0x
 * ReShade: https://reshade.me · https://github.com/crosire/reshade (tag v6.8.0 = `18deaa52…`)
 * Sony 공식 업데이트 서버(titlepatch XML / PKG), No-Intro PSN 업데이트 DB(RPCS3 공식 API)
 * 프로젝트 저장소: https://github.com/loliRuriruri/RPCS3DC
+
+---
+
+## 8. Closeout 패치 검증 항목 (2026-09-26 추가)
+
+Phase 1 Closeout 에서 수정된 P0/P1 항목의 검증 포인트:
+
+| # | 항목 | 증거 | 상태 |
+|---|---|---|---|
+| I1 | 해상도 선택(4K/5K)이 실제 프로필에 연결 | `settings.json` `ResolutionProfile`, 런타임 config `Dragons_Crown_DC_PRO_MAX_5K__Borderless4K.yml` (Scale 400) | 검증됨 |
+| I2 | 5K 400% 부팅 | 창 제목 `FPS: 59.83~60.02 … [BCAS20298]` | 검증됨 |
+| I3 | Netplay Safe ReShade runtime 강제 차단 | 사용자 설정 `ReShade=1` 상태에서 Safe 실행 → `ReShade.log` 크기 불변 | 검증됨 |
+| I4 | Safe 후 사용자 설정 보존 | `settings.json` 이 `GraphicsPreset=ProEnhanced, ResolutionProfile=5K` 유지 | 검증됨 |
+| I5 | v1.09 엄격 검사 | `Game version (BCAS20298 v01.09)` 진단 항목 + RPCN 차단 로직 | 검증됨(코드/진단) |
+| I6 | RPCN 사전 검사 차단 | 미설정 상태에서 `--launch RPCNSAFE` → `RPCN account is not configured` 로그, RPCS3 미실행 | 검증됨 |
+| I7 | `--restore-window` 즉시 복원 + 유지 | 로그 `cli --restore-window (immediate restore + stop flag)`, 창 `0x96CF0000 / 3862x2186` 8초 유지, `stop requested -> restoring and exiting watcher` | 검증됨 |
+| I8 | Borderless launchPid 타겟팅 | 로그 `borderless: target pid=<launched pid>` | 검증됨 |
+| I9 | 진단 실제값/구분 | `Logs\diag_closeout_4k.txt`(35항목), 치트/패치 존재↔활성 분리, RPCN Configured↔Login 분리 | 검증됨 |
+| I10 | Backup/Restore/Reset/CHEAT/KnownGood | `Backups\20260926_163948_closeout_test`, `Saves\...\DC_SAVE_..._cheat_offline`, KnownGood PID 기동 | 검증됨 |
+
+주의: I1~I10 은 **자동 검증**이다. 30분 플레이·Local 2P·Remote Co-op·RPCN 2-PC 는
+`Docs\ACCEPTANCE_TEST.md` 의 사용자 Acceptance 로 남는다 (PENDING).

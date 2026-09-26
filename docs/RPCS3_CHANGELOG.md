@@ -158,6 +158,25 @@
 
 ---
 
+## 2026-09-26 — Phase 1 Closeout (P0/P1 결함 수정 · RC 준비)
+
+| # | 변경 | 위치 | 비고 |
+|---|---|---|---|
+| 98 | **P0-1 해상도 선택 연결** | 런처 SETTINGS → Graphics | 4K/300% ↔ 5K/400% 선택이 실제 프로필(`DC_PRO_4K`/`DC_PRO_MAX_5K`)에 연결. `ResolutionProfile` 로 저장(재실행 유지). PLAY/Local/Remote/KnownGood 모두 선택 해상도 사용 |
+| 99 | CLI 확장 | 런처 | `--resolution 4K\|5K` 추가 |
+| 100 | **P0-2 Netplay Safe 강제** | 런처 RPCN 화면 + CLI | Standard 강제 + ReShade **runtime 강제 차단**(`DISABLE_VK_LAYER_reshade_1=1`) + `NETPLAY_SAFE` 프로필. Safe 체크 기본 ON |
+| 101 | **P0-3 사용자 설정 보존** | `Project.Launch(forceReShadeOff)` | Safe 는 temporary runtime override — 게임 종료 후 기존 설정(Pro Enhanced + 5K 등) 유지(실측 확인) |
+| 102 | **P0-4 v1.09 엄격 검사** | Diagnostics + Preflight(GUI/CLI) | `APP_VER == 01.09` 가 아니면 RPCN/Netplay Safe 실행 차단 + 안내 문구. Solo 는 차단하지 않음 |
+| 103 | **P0-5 RPCN 문서 정정** | MULTIPLAYER / RPCN_NETPLAY(_GUIDE) | "Untested(전 항목)" → **RPCN_PARTIAL** 분류, "RPCN Guaranteed" 표현 금지, fallback 순서 유지 |
+| 104 | P1 진단 정확도 | `RunDiagnostics()` | 전체 항목(런타임 카운트, 현재 35): 프로필 실제값(Scale/Aspect/Stretch/AF/VSync/VBlank/FrameSkip) 검사, 치트/패치 **존재↔활성 구분**(UNKNOWN 허용), RPCN Configured↔Login 구분, 하드코딩 수치 제거 |
+| 105 | P1 경로 하드코딩 제거 | 런처 Network 화면 | `E:\PS3\Tools\...` → `Path.Combine(Root, "Tools", ...)` |
+| 106 | P1 `--restore-window` 수정 | CLI + TOOLS | watcher 시작이 아니라 **즉시 복원**(`RequestStopAndRestore`) + stop flag 로 watcher 재적용 방지 |
+| 107 | P1 Borderless PID 타겟팅 | `BorderlessEngine` | launchPid 우선, 프로세스 종료 시에만 fallback, titlebar 도 대상 PID 한정 |
+| 108 | P1 Backup/Restore 안전 | `RestoreSettingsBackup` | 프로젝트 Root 밖으로 나가는 경로 skip(방어). before_restore/before_reset 자동 백업 유지 |
+| 109 | P1 세이브 문구 정확화 | 런처/문서 | "live savedata/trophy 는 Reset 대상 아님", "AutoBackup 최신 20세대 보존" 명시 |
+| 110 | P1 문서 | 루트 README + Docs | 루트 README 복원(간결), `GRAPHICS_PROFILES.md` 재작성(중복 문서 정정), `CHANGELOG.md` 통합 안내, `ACCEPTANCE_TEST.md` 신규 |
+| 111 | Closeout 실측 | Logs | 5K 400% 부팅 59.8~60.0fps / Standard ReShade 미로드 / Pro→Safe 강제 OFF + 설정 보존 / Borderless 물리 3840x2160·복원 유지 / Reset·Backup·CHEAT·KnownGood PASS |
+| 112 | 상태 | Phase 1 | **Implementation Complete / Acceptance Pending** (tag `v1.0.0-rc1`) |
 ## 원본(C:\) 무변경 확인
 
 | 항목 | 확인 |
