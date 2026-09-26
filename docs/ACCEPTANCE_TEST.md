@@ -144,6 +144,36 @@ RPCN 이 게임/RPCS3 외부 호환성 문제로 실패하더라도,
 
 ---
 
+## H. GAME PATH PORTABILITY (Cross-PC)
+
+상태: **PORTABILITY IMPLEMENTATION COMPLETE / CROSS-PC ACCEPTANCE PENDING**
+
+실제 다른 PC 검증 전까지 아래 4항목은 **PENDING** 으로 유지한다.
+
+| # | 항목 | 방법 | 상태 |
+|---|---|---|---|
+| H1 | RPCS3 list detects BCAS20298 | 다른 PC의 RPCS3 목록 확인 | **PENDING (실제 다른 PC 필요)** |
+| H2 | Launcher detects same installation | 다른 PC에서 런처 실행 → GAME 라인 확인 | **PENDING** |
+| H3 | Standard boots | 다른 PC에서 PLAY | **PENDING** |
+| H4 | v01.09 detected | 런처 상태/진단의 버전 표시 확인 | **PENDING** |
+
+로컬 재현 검증(이 PC, 실측 PASS):
+
+| 케이스 | 결과 |
+|---|---|
+| games.yml = disc root (trailing slash) | PASS |
+| games.yml = direct PS3_GAME | PASS |
+| games.yml = `PS3_GAME/./` | PASS |
+| games.yml = EBOOT.BIN / USRDIR | PASS |
+| stale games.yml + `ROOT\Games` 존재 → portable fallback | PASS |
+| 수동 폴더 선택 → `game.txt` 저장·유지·우선순위 | PASS |
+| 잘못된 폴더(BCAS20298 아님) → 거부 | PASS |
+| RPCS3 Add Games 후 새로고침 재탐지 | PASS |
+| Standard / Pro Enhanced 부팅 (59.9 / 60.2 fps) | PASS |
+
+진단: `DragonCrownProEnhanced.exe --game` · `--probe "<경로>"` · `--set-game "<경로>"`,
+로그: `Logs\launcher.log` 의 `[GameResolver]` 줄. 절차 안내: `Docs\TROUBLESHOOTING.md`.
+
 ## Phase 1 완료 조건 (§31)
 
 다음이 모두 충족되어야 `PHASE 1 COMPLETE` 로 변경한다:
