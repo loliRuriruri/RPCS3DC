@@ -158,6 +158,15 @@
 
 ---
 
+## 2026-09-26 — Phase 1 RC2 (이식성 수정 · RPCS3 자동 업데이트 대응 · 공유 패키지 재정비)
+
+| # | 변경 | 위치 | 비고 |
+|---|---|---|---|
+| 113 | 런처 ReShade 경로 자동 수정 | `EnsureReShadePaths()` | EffectSearchPaths / TextureSearchPaths / PresetPath 를 프로젝트 루트 기준으로 재작성, 머신 전용 IntermediateCachePath 제거 → **다른 PC/폴더에서 동작**. 실측: 위조 경로(`D:\OtherPC\…`) → `E:\PS3\…` 자동 복구 |
+| 114 | RPCS3 자동 업데이트 사고 대응 | `RPCS3\rpcs3.exe` | 18:48:27 RPCS3 자체 업데이터가 20053 → 20058 로 업데이트(`rpcs3_old`, `update_history.log` 기록). 기준 빌드(**20053**)로 복원 → 해시 = KnownGood = C:\원본 일치. `GuiConfigs\CurrentSettings.ini` 에 `checkUpdateStart=false` 추가. 복원 후 부팅 59.95fps 확인 |
+| 115 | 공유 패키지 재정비 | `Tools\build_share_package.ps1` | Closeout 반영: 런처 RC2 · 프로필 5종(NETPLAY_SAFE 포함) · ReShade 셰이더 12종 + ZERO-BANNER(선택) + 설치/복원 스크립트 + 라이선스 고지 · 방화벽 스크립트(경로 자동) · 문서 22종. 감사: 게임/펌웨어/세이브/계정/개인정보 없음(PSID 0 처리) |
+| 116 | 방화벽 스크립트 이식성 | `Tools\firewall_rpcs3_allow.cmd` | `E:\PS3\…` 하드코딩 제거 → `%~dp0..\RPCS3\rpcs3.exe` 자동 계산 (프로젝트 이동 가능) |
+| 117 | 배포 패키지 | `Backups\DragonCrown_PRO_Enhanced_Setup.zip` | 60.32 MB · 58 엔트리 · 런처 SHA256 `E904E350…EBD94` 포함 |
 ## 2026-09-26 — Phase 1 Closeout (P0/P1 결함 수정 · RC 준비)
 
 | # | 변경 | 위치 | 비고 |

@@ -180,20 +180,43 @@ namespace DragonCrownProEnhanced
         {
             GraphicsPreset = preset == PresetProEnhanced ? PresetProEnhanced : PresetStandard;
             ReShadeEnabled = GraphicsPreset == PresetProEnhanced;
-            string ini = Path.Combine(Rpcs3Dir, "ReShade.ini");
-            if (File.Exists(ini))
-            {
-                string text = File.ReadAllText(ini);
-                string target = Path.Combine(PresetsDir, GraphicsPreset == PresetProEnhanced ? "DC_PRO_ENHANCED.ini" : "DC_POSTFX_MINIMAL.ini");
-                if (Regex.IsMatch(text, @"(?m)^PresetPath="))
-                    text = Regex.Replace(text, @"(?m)^PresetPath=.*$", m => "PresetPath=" + target);
-                else
-                    text = text.Replace("[GENERAL]", "[GENERAL]\r\nPresetPath=" + target);
-                File.WriteAllText(ini, text);
-            }
+            EnsureReShadePaths();
             ApplyReShadeSilent(ReShadeSilent);
             SaveSettings();
             Log($"graphics preset -> {GraphicsPreset} (ReShade {(ReShadeEnabled ? "ON" : "OFF")}, resolution {ResolutionProfile})");
+        }
+
+        /// <summary>
+        /// Rewrites machine-specific ReShade paths to this project root so the launcher
+        /// works from any install folder (portable / shared installs).
+        /// </summary>
+        public void EnsureReShadePaths()
+        {
+            try
+            {
+                string ini = Path.Combine(Rpcs3Dir, "ReShade.ini");
+                if (!File.Exists(ini)) return;
+                string text = File.ReadAllText(ini);
+                string shaders = Path.Combine(Root, "Mods_Patches", "ReShade", "Shaders");
+                string textures = Path.Combine(Root, "Mods_Patches", "ReShade", "Textures");
+                string preset = Path.Combine(PresetsDir, GraphicsPreset == PresetProEnhanced ? "DC_PRO_ENHANCED.ini" : "DC_POSTFX_MINIMAL.ini");
+
+                void SetKey(string key, string value)
+                {
+                    if (Regex.IsMatch(text, @"(?m)^" + Regex.Escape(key) + @"="))
+                        text = Regex.Replace(text, @"(?m)^" + Regex.Escape(key) + @"=.*$", m => key + "=" + value);
+                    else if (Regex.IsMatch(text, @"(?m)^\[GENERAL\]\s*$"))
+                        text = Regex.Replace(text, @"(?m)^\[GENERAL\]\s*$", m => m.Value + "\r\n" + key + "=" + value);
+                    else
+                        text = text.TrimEnd() + "\r\n" + key + "=" + value + "\r\n";
+                }
+                SetKey("EffectSearchPaths", shaders);
+                SetKey("TextureSearchPaths", textures);
+                SetKey("PresetPath", preset);
+                text = Regex.Replace(text, @"(?m)^IntermediateCachePath=.*\r?\n?", "");   // machine-specific temp cache
+                File.WriteAllText(ini, text);
+            }
+            catch { }
         }
 
         // ------------------------------------------------------------ runtime config

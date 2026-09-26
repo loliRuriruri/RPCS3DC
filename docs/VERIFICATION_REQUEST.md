@@ -37,7 +37,7 @@
 
 | 산출물 | 경로 | 크기 | 해시 |
 |---|---|---|---|
-| GUI 런처 | `E:\PS3\Launcher\DragonCrownProEnhanced.exe` | 63.24 MB | SHA256 `27CDF02D8B30E6937C9666EF61B032E1A4204AD31D2A050A6484FD1A4FF0FCB4` (Closeout 재빌드) |
+| GUI 런처 | `E:\PS3\Launcher\DragonCrownProEnhanced.exe` | 63.24 MB | SHA256 `E904E350067E046580519CC9BF77B2A3774456E7555318A218C2A30BEA4EBD94` (RC2: 이식성 수정 반영) |
 | 런처 소스 | `E:\PS3\Launcher\src\` (7 파일) + GitHub `launcher/src` | — | — |
 | RPCS3 KnownGood | `E:\PS3\RPCS3\KnownGood\` | 874 MB(RPCS3 전체) | `rpcs3.exe` SHA256 원본과 동일 |
 | ReShade (설치본) | `C:\ProgramData\ReShade\ReShade64.dll` | 5,581,824 B | 6.8.0.1 / SHA256 `FFCAB1B2…E181` (ZERO-BANNER 자체 빌드) |

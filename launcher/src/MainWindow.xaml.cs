@@ -19,6 +19,7 @@ namespace DragonCrownProEnhanced
             InitializeComponent();
             _p = Project.Discover();
             _p.Log("launcher start (root=" + _p.Root + ", preset=" + _p.GraphicsPreset + ", resolution=" + _p.ResolutionProfile + ")");
+            try { _p.EnsureReShadePaths(); } catch { }
             try { _p.ApplyReShadeSilent(_p.ReShadeSilent); } catch { }
             RefreshStatus();
             TxtRoot.Text = "ROOT: " + _p.Root + "   ·   게임: " + (_p.GameExe ?? "(미탐지 — RPCS3 게임 목록에 등록 필요)");

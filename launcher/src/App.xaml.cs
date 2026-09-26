@@ -50,6 +50,8 @@ namespace DragonCrownProEnhanced
             string a0 = args[0].ToLowerInvariant();
             try
             {
+                // keep ReShade paths valid even when the project folder moved (portable installs)
+                try { p.EnsureReShadePaths(); } catch { }
                 switch (a0)
                 {
                     case "--status":

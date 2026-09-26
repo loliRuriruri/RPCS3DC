@@ -1,7 +1,8 @@
 # PHASE 1 CLOSEOUT REPORT — Dragon's Crown PC Edition
 
 작성일: 2026-09-26 · 태그: `v1.0.0-rc1` (코드 마감 + 자동 검증 완료)
-런처 바이너리: `DragonCrownProEnhanced.exe` (63.24 MB) SHA256 `27CDF02D8B30E6937C9666EF61B032E1A4204AD31D2A050A6484FD1A4FF0FCB4`
+런처 바이너리(RC2): `DragonCrownProEnhanced.exe` (63.24 MB) SHA256 `E904E350067E046580519CC9BF77B2A3774456E7555318A218C2A30BEA4EBD94`
+후속 수정(RC2): 런처 ReShade 경로 자동 수정(다른 PC/폴더 지원) · RPCS3 자동 업데이트(20053→20058) 감지 후 기준 빌드 복원 + checkUpdateStart=false · 공유 패키지 재정비
 
 ```text
 === DRAGON'S CROWN PC EDITION — PHASE 1 CLOSEOUT ===
