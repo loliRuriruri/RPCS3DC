@@ -105,25 +105,26 @@ def main():
         src_root = os.path.join(SRC, src_dir)
         if not os.path.isdir(src_root):
             continue
-        for name in sorted(os.listdir(src_root)):
-            full = os.path.join(src_root, name)
-            if not os.path.isfile(full):
-                continue
-            if not any(name.endswith(pat.lstrip("*")) for pat in patterns):
-                continue
-            if not wanted(full):
-                continue
-            dst_path = os.path.join(DST, dst_dir, name)
-            os.makedirs(os.path.dirname(dst_path), exist_ok=True)
-            if name.lower().endswith(BINARY_EXTS):
-                shutil.copyfile(full, dst_path)
+        for root, dirs, files in os.walk(src_root):
+            rel_root = os.path.relpath(root, src_root)
+            for name in sorted(files):
+                full = os.path.join(root, name)
+                if not any(name.lower().endswith(pat.lstrip("*").lower()) for pat in patterns):
+                    continue
+                if not wanted(full):
+                    continue
+                rel_dir = "" if rel_root == "." else rel_root
+                dst_path = os.path.join(DST, dst_dir, rel_dir, name)
+                os.makedirs(os.path.dirname(dst_path), exist_ok=True)
+                if name.lower().endswith(BINARY_EXTS):
+                    shutil.copyfile(full, dst_path)
+                    copied += 1
+                    continue
+                with open(full, "r", encoding="utf-8", errors="replace") as f:
+                    text = f.read()
+                with open(dst_path, "w", encoding="utf-8", newline="\n") as f:
+                    f.write(scrub(text))
                 copied += 1
-                continue
-            with open(full, "r", encoding="utf-8", errors="replace") as f:
-                text = f.read()
-            with open(dst_path, "w", encoding="utf-8", newline="\n") as f:
-                f.write(scrub(text))
-            copied += 1
 
     print(f"copied {copied} files -> {DST}")
 
