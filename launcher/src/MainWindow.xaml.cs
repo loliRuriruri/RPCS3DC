@@ -22,7 +22,8 @@ namespace DragonCrownProEnhanced
             try { _p.EnsureReShadePaths(); } catch { }
             try { _p.ApplyReShadeSilent(_p.ReShadeSilent); } catch { }
             RefreshStatus();
-            TxtRoot.Text = "ROOT: " + _p.Root + "   ·   게임: " + (_p.GameExe ?? "(미탐지 — RPCS3 게임 목록에 등록 필요)");
+            TxtRoot.Text = $"ROOT: {_p.Root}   ·   게임: {(_p.GameDir ?? "(미탐지 — SETTINGS→Advanced→게임 폴더 선택 또는 RPCS3 Add Games)")}" +
+                           $"   ·   {(_p.GameTitleId ?? "?")} v{_p.GameVersion()}";
             Append("Dragon's Crown PC Edition (Phase 1 RC) 준비 완료");
         }
 
@@ -60,10 +61,43 @@ namespace DragonCrownProEnhanced
         }
 
         /// <summary>Preflight checks. RPCN / Netplay Safe enforce BCAS20298 v01.09 and clean runtime.</summary>
+        /// <summary>Shows the game-path picker when the game cannot be found (manual pick / RPCS3 list).</summary>
+        private bool EnsureGameAvailable()
+        {
+            if (_p.GameExe != null && File.Exists(_p.GameExe)) return true;
+            while (true)
+            {
+                var r = MessageBox.Show(
+                    "Dragon's Crown [BCAS20298] 경로를 찾을 수 없습니다.\n\n" +
+                    "[예]     게임 폴더 선택 (Disc root 또는 PS3_GAME)\n" +
+                    "[아니오] RPCS3 게임 목록 열기 (Add Games)\n" +
+                    "[취소]   중단\n\n" +
+                    "자동 탐색 순서: RPCS3 games.yml → Launcher\\game.txt → ROOT\\Games",
+                    "게임 경로 필요", MessageBoxButton.YesNoCancel, MessageBoxImage.Warning);
+                if (r == MessageBoxResult.Cancel) return false;
+                if (r == MessageBoxResult.No) { OpenRpcs3Settings(Rpcs3SettingsKind.MainWindow); continue; }
+
+                var dlg = new Microsoft.Win32.OpenFolderDialog
+                {
+                    Title = "Dragon's Crown 게임 폴더 선택 (Disc root 또는 PS3_GAME)",
+                    Multiselect = false,
+                };
+                if (dlg.ShowDialog() != true) continue;
+                if (_p.SetGameRoot(dlg.FolderName, out string error))
+                {
+                    Append("게임 경로 저장: " + _p.GameDir);
+                    MessageBox.Show("게임 경로를 저장했습니다:\n" + _p.GameDir, "게임 폴더", MessageBoxButton.OK, MessageBoxImage.Information);
+                    RefreshStatus();
+                    return true;
+                }
+                MessageBox.Show(error, "게임 폴더", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
         private void Preflight(string profile, bool needNetplay = false, bool needSecondPad = false)
         {
             if (!File.Exists(_p.Rpcs3Exe)) throw new Exception("rpcs3.exe를 찾을 수 없습니다: " + _p.Rpcs3Exe);
-            if (_p.GameExe == null || !File.Exists(_p.GameExe)) throw new Exception("게임 덤프를 찾을 수 없습니다. RPCS3 게임 목록에 Dragon's Crown을 추가하세요.");
+            if (!EnsureGameAvailable()) throw new Exception("게임 경로가 지정되지 않았습니다.");
             if (!File.Exists(_p.ProfilePath(profile))) throw new Exception("프로필이 없습니다: " + profile + "\nTOOLS → Backup/Restore 로 복원할 수 있습니다.");
             if (needNetplay)
             {
@@ -414,13 +448,16 @@ namespace DragonCrownProEnhanced
 
         private void BtnRpcs3Refresh_Click(object sender, RoutedEventArgs e)
         {
+            _p.RefreshGameDiscovery();          // re-run discovery (games.yml may have changed after Add Games)
             RefreshStatus();
             var procs = Rpcs3UiBridge.ProjectProcesses(_p);
             string detail = procs.Count == 0
                 ? "RPCS3 가 실행 중이 아닙니다."
                 : $"실행 중: pid {string.Join(", ", procs.Select(x => x.Id))}" +
                   (Rpcs3UiBridge.IsGameRunning(_p) ? " · 게임 실행 중 (설정 일부는 게임 재실행 후 적용)" : "");
-            Append("RPCS3 상태: " + detail);
+            detail += "\n\n게임 경로: " + (_p.GameDir ?? "(미탐지)") +
+                      "\nTITLE ID / VER: " + (_p.GameTitleId ?? "?") + " / " + _p.GameVersion();
+            Append("RPCS3 상태: " + detail.Replace("\n", " | "));
             MessageBox.Show(detail, "RPCS3 상태");
         }
 
@@ -541,13 +578,26 @@ namespace DragonCrownProEnhanced
                 "ROOT           : " + _p.Root + "\n" +
                 "RPCS3 Current  : " + _p.Rpcs3Dir + "\n" +
                 "RPCS3 KnownGood: " + Path.Combine(_p.Rpcs3Dir, "KnownGood") + " (" + (File.Exists(_p.KnownGoodExe) ? "있음" : "없음") + ")\n" +
-                "Game           : " + (_p.GameDir ?? "(미탐지)") + "\n" +
-                "TITLE ID / VER : " + _p.TitleId + " / " + _p.GameVersion() + "\n" +
+                "Game root      : " + (_p.GameDir ?? "(미탐지)") + "\n" +
+                "Game exe       : " + (_p.GameExe ?? "(없음)") + "\n" +
+                "TITLE ID / VER : " + (_p.GameTitleId ?? _p.TitleId) + " / " + _p.GameVersion() + "\n" +
                 "PPU HASH       : " + _p.PpuHash() + "\n" +
                 "Graphics       : " + _p.GraphicsSummary + "  (profile=" + _p.ActiveProfileName + ")\n" +
                 "ReShade        : " + _p.ReShadeVersion() + " · preset=" + _p.GraphicsPreset + " · silent=" + _p.ReShadeSilent + "\n" +
                 "Profiles       : " + _p.ProfilesDir + "\n" +
                 "Runtime configs: " + _p.RuntimeDir));
+            panel.Children.Add(PanelButton("게임 폴더 선택 (Disc root / PS3_GAME) — game.txt 저장", () =>
+            {
+                if (!EnsureGameAvailable()) return;
+                MessageBox.Show("저장됨:\n" + _p.GameDir, "게임 폴더", MessageBoxButton.OK, MessageBoxImage.Information);
+                RefreshStatus();
+            }));
+            panel.Children.Add(PanelButton("게임 탐지 다시 실행 (games.yml 재확인)", () =>
+            {
+                _p.RefreshGameDiscovery();
+                MessageBox.Show("게임 경로: " + (_p.GameDir ?? "(미탐지)") + "\nTITLE ID: " + (_p.GameTitleId ?? "?"), "게임 탐지");
+                RefreshStatus();
+            }));
             panel.Children.Add(PanelButton("런타임 설정 폴더 열기", () => OpenPath(_p.RuntimeDir)));
             panel.Children.Add(PanelButton("프로필 폴더 열기", () => OpenPath(_p.ProfilesDir)));
             panel.Children.Add(PanelButton("RPCS3 config 폴더 열기", () => OpenPath(Path.Combine(_p.Rpcs3Dir, "config"))));

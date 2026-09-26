@@ -27,8 +27,10 @@ namespace DragonCrownProEnhanced
         public string BackupDir => Path.Combine(Root, "Backups");
         public string ToolsDir => Path.Combine(Root, "Tools");
         public string BorderlessStopFlag => Path.Combine(LogDir, "borderless_stop.flag");
-        public string GameDir { get; private set; }
+        public string GameDir { get; private set; }                 // canonical disc root (contains PS3_GAME)
         public string GameExe => string.IsNullOrEmpty(GameDir) ? null : Path.Combine(GameDir, "PS3_GAME", "USRDIR", "EBOOT.BIN");
+        public string GameParamSfo => string.IsNullOrEmpty(GameDir) ? null : Path.Combine(GameDir, "PS3_GAME", "PARAM.SFO");
+        public string GameTitleId => GameParamSfo == null ? null : ReadSfoString(GameParamSfo, "TITLE_ID");
         public string TitleId { get; private set; } = "BCAS20298";
 
         public const string NetplayRequiredVersion = "01.09";
@@ -63,7 +65,7 @@ namespace DragonCrownProEnhanced
         public string ProfilePath(string name) => Path.Combine(ProfilesDir, name.Replace('/', Path.DirectorySeparatorChar), "config.yml");
 
         // ------------------------------------------------------------ root detection
-        public static Project Discover()
+        public static Project Discover(bool discoverGame = true)
         {
             var p = new Project();
             string exeDir = AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar);
@@ -81,7 +83,7 @@ namespace DragonCrownProEnhanced
                 }
             }
             p.Root ??= exeDir;
-            p.ResolveGame();
+            if (discoverGame) p.ResolveGame();
             p.LoadSettings();
             return p;
         }
@@ -91,36 +93,223 @@ namespace DragonCrownProEnhanced
             try { File.WriteAllText(Path.Combine(AppContext.BaseDirectory, "root.txt"), Root); } catch { }
         }
 
+        // ------------------------------------------------------------ game discovery
+        /// <summary>Re-runs discovery from scratch (RPCS3 games.yml → Launcher\game.txt → portable fallbacks).</summary>
+        public void RefreshGameDiscovery()
+        {
+            string before = GameDir;
+            GameDir = null;
+            ResolveGame();
+            Log($"[GameResolver] refresh: {before ?? "(none)"} -> {GameDir ?? "(not found)"}");
+        }
+
+        /// <summary>Stores a user-picked game folder (disc root or PS3_GAME) into Launcher\game.txt.</summary>
+        public bool SetGameRoot(string path, out string error)
+        {
+            if (!TryResolveGamePath(path, out string root, out string detail))
+            {
+                error = "Dragon's Crown [BCAS20298] 경로가 아닙니다.\n" + detail;
+                return false;
+            }
+            GameDir = root;
+            try { File.WriteAllText(Path.Combine(AppContext.BaseDirectory, "game.txt"), root); } catch { }
+            Log($"[GameResolver] manual pick -> {root} ({detail})");
+            error = null;
+            return true;
+        }
+
         private void ResolveGame()
         {
+            var tried = new List<string>();
+            foreach (var raw in GamesYmlCandidates()) if (Attempt(raw, allowSave: false)) return;
+            foreach (var raw in FileHintCandidates()) if (Attempt(raw, allowSave: false)) return;
+            foreach (var raw in PortableCandidates()) if (Attempt(raw, allowSave: true)) return;
+            Log("[GameResolver] not found. tried=" + string.Join(" | ", tried.Take(20)));
+
+            bool Attempt(string raw, bool allowSave)
+            {
+                string norm = NormalizePath(raw);
+                if (TryResolveGamePath(norm, out string root, out string detail))
+                {
+                    GameDir = root;
+                    // Only a portable-fallback hit is persisted; games.yml / game.txt results must not
+                    // overwrite a user's manual pick (game.txt).
+                    if (allowSave)
+                    {
+                        try { File.WriteAllText(Path.Combine(AppContext.BaseDirectory, "game.txt"), root); } catch { }
+                    }
+                    Log($"[GameResolver] OK raw=[{raw}] normalized=[{norm}] -> {root} ({detail})" +
+                        (allowSave ? " [saved to game.txt]" : ""));
+                    return true;
+                }
+                tried.Add($"raw=[{raw}] norm=[{norm}] => {detail}");
+                return false;
+            }
+        }
+
+        /// <summary>All BCAS20298 entries from RPCS3's games.yml (RPCS3 may store disc root, PS3_GAME, or "PS3_GAME/./").</summary>
+        private List<string> GamesYmlCandidates()
+        {
+            var list = new List<string>();
             try
             {
                 string games = Path.Combine(Rpcs3Dir, "config", "games.yml");
-                if (File.Exists(games))
+                if (!File.Exists(games)) return list;
+                foreach (var line in File.ReadAllLines(games))
                 {
-                    foreach (var line in File.ReadAllLines(games))
-                    {
-                        var m = Regex.Match(line, @"^\s*" + TitleId + @"\s*:\s*(.+?)\s*$");
-                        if (!m.Success) continue;
-                        string dir = m.Groups[1].Value.Trim().Trim('"').Replace('/', Path.DirectorySeparatorChar);
-                        if (!Directory.Exists(dir)) continue;
-                        if (File.Exists(Path.Combine(dir, "PS3_GAME", "USRDIR", "EBOOT.BIN"))) { GameDir = dir; return; }
-                        var parent = Directory.GetParent(dir)?.FullName;
-                        if (parent != null && File.Exists(Path.Combine(parent, "PS3_GAME", "USRDIR", "EBOOT.BIN"))) { GameDir = parent; return; }
-                    }
+                    var m = Regex.Match(line, @"^\s*" + Regex.Escape(TitleId) + @"\s*:\s*(.+?)\s*$");
+                    if (m.Success && m.Groups[1].Value.Trim().Length > 0) list.Add(m.Groups[1].Value.Trim());
                 }
             }
             catch { }
+            return list;
+        }
+
+        private List<string> FileHintCandidates()
+        {
+            var list = new List<string>();
             try
             {
                 string hint = Path.Combine(AppContext.BaseDirectory, "game.txt");
                 if (File.Exists(hint))
                 {
-                    string dir = File.ReadAllText(hint).Trim();
-                    if (File.Exists(Path.Combine(dir, "PS3_GAME", "USRDIR", "EBOOT.BIN"))) GameDir = dir;
+                    string t = File.ReadAllText(hint).Trim();
+                    if (t.Length > 0) list.Add(t);
                 }
             }
             catch { }
+            return list;
+        }
+
+        /// <summary>Bounded portable search: ROOT\Games / ROOT\Game / shallow scan of ROOT (never a whole-drive scan).</summary>
+        private List<string> PortableCandidates()
+        {
+            var list = new List<string>();
+            void Add(string d) { if (!string.IsNullOrEmpty(d)) list.Add(d); }
+
+            foreach (var baseName in new[] { "Games", "Game" })
+            {
+                string b = Path.Combine(Root, baseName);
+                if (!Directory.Exists(b)) continue;
+                Add(Path.Combine(b, TitleId));
+                Add(Path.Combine(b, "Dragon's Crown"));
+                try { foreach (var d in Directory.GetDirectories(b)) Add(d); } catch { }
+            }
+
+            var skip = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "RPCS3", "Backups", "Logs", "Launcher", "Tools", "Mods_Patches", "Profiles",
+                "ReShade", "Saves", "Cheats", "remote-coop", "GitHub", ".git", "KnownGood"
+            };
+            int visited = 0;
+            void Scan(string dir, int depth)
+            {
+                if (depth > 3 || visited > 1500) return;
+                visited++;
+                try
+                {
+                    if (Path.GetFileName(dir).Equals("PS3_GAME", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (File.Exists(Path.Combine(dir, "PARAM.SFO"))) Add(Directory.GetParent(dir)?.FullName);
+                        return;
+                    }
+                    if (File.Exists(Path.Combine(dir, "PS3_GAME", "PARAM.SFO"))) { Add(dir); return; }
+                    foreach (var d in Directory.GetDirectories(dir))
+                    {
+                        if (skip.Contains(Path.GetFileName(d))) continue;
+                        Scan(d, depth + 1);
+                    }
+                }
+                catch { }
+            }
+            Scan(Root, 0);
+            return list.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        }
+
+        /// <summary>
+        /// Resolves a raw path (games.yml / game.txt / user pick) into a canonical disc root.
+        /// Supports: disc root, direct PS3_GAME, "PS3_GAME/./", EBOOT.BIN path, USRDIR path,
+        /// plus 1-2 parent fallbacks. Validates BCAS20298 through PS3_GAME\PARAM.SFO.
+        /// </summary>
+        public bool TryResolveGamePath(string rawPath, out string root, out string detail)
+        {
+            root = null;
+            detail = "";
+            string p = NormalizePath(rawPath);
+            if (p.Length == 0) { detail = "empty path"; return false; }
+
+            var probes = new List<(string candidate, string kind)>();
+
+            // EBOOT.BIN file path → ...\PS3_GAME\USRDIR\EBOOT.BIN
+            if (File.Exists(p) && Path.GetFileName(p).Equals("EBOOT.BIN", StringComparison.OrdinalIgnoreCase))
+            {
+                var usrdir = new DirectoryInfo(Path.GetDirectoryName(p) ?? "");
+                var ps3game = usrdir.Parent;
+                if (ps3game != null && ps3game.Name.Equals("PS3_GAME", StringComparison.OrdinalIgnoreCase))
+                    probes.Add((ps3game.Parent?.FullName, "EBOOT.BIN path"));
+                else
+                    probes.Add((usrdir.FullName, "EBOOT.BIN parent"));
+            }
+            // direct disc root
+            probes.Add((p, "disc root"));
+            // PS3_GAME itself, USRDIR, parents
+            if (Path.GetFileName(p).Equals("PS3_GAME", StringComparison.OrdinalIgnoreCase))
+                probes.Add((Directory.GetParent(p)?.FullName, "PS3_GAME dir"));
+            else if (Path.GetFileName(p).Equals("USRDIR", StringComparison.OrdinalIgnoreCase))
+                probes.Add((Directory.GetParent(p)?.Parent?.FullName, "USRDIR dir"));
+            else
+                probes.Add((Directory.GetParent(p)?.FullName, "parent"));
+            string gp1 = Directory.GetParent(p)?.FullName;
+            string gp2 = gp1 == null ? null : Directory.GetParent(gp1)?.FullName;
+            if (gp1 != null) probes.Add((gp1, "parent#2"));
+            if (gp2 != null) probes.Add((gp2, "grandparent"));
+
+            foreach (var (cand, kind) in probes)
+            {
+                if (string.IsNullOrEmpty(cand)) continue;
+                string c = NormalizePath(cand);
+                string exe = Path.Combine(c, "PS3_GAME", "USRDIR", "EBOOT.BIN");
+                if (!File.Exists(exe)) { detail = $"{kind}: no EBOOT.BIN ({exe})"; continue; }
+                if (!ValidateGameRoot(c, out string vdetail)) { detail = $"{kind}: {vdetail}"; continue; }
+                root = c;
+                detail = $"{kind}: OK ({vdetail})";
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>Validates that the root contains BCAS20298 (TITLE_ID in PS3_GAME\PARAM.SFO).</summary>
+        public bool ValidateGameRoot(string root, out string detail)
+        {
+            string sfo = Path.Combine(root, "PS3_GAME", "PARAM.SFO");
+            if (!File.Exists(sfo)) { detail = "PARAM.SFO missing"; return false; }
+            string titleId = ReadSfoString(sfo, "TITLE_ID");
+            string appVer = ReadSfoString(sfo, "APP_VER");
+            if (!string.IsNullOrEmpty(titleId))
+            {
+                if (!titleId.Equals(TitleId, StringComparison.OrdinalIgnoreCase))
+                { detail = $"TITLE_ID mismatch: {titleId} != {TitleId}"; return false; }
+                detail = $"TITLE_ID={titleId} APP_VER={appVer}";
+                return true;
+            }
+            detail = "TITLE_ID not present in PARAM.SFO (accepted by games.yml key)";
+            return true;
+        }
+
+        /// <summary>Quotes / slashes / "." segments / trailing separators (UNC-safe).</summary>
+        public static string NormalizePath(string raw)
+        {
+            try
+            {
+                string s = (raw ?? "").Trim().Trim('"').Trim();
+                if (s.Length == 0) return "";
+                s = s.Replace('/', Path.DirectorySeparatorChar);
+                try { s = Path.GetFullPath(s); } catch { }
+                while (s.Length > 3 && (s.EndsWith(Path.DirectorySeparatorChar.ToString()) || s.EndsWith(Path.AltDirectorySeparatorChar.ToString())))
+                    s = s.Substring(0, s.Length - 1);
+                return s;
+            }
+            catch { return raw ?? ""; }
         }
 
         // ------------------------------------------------------------ settings
@@ -445,7 +634,7 @@ namespace DragonCrownProEnhanced
             foreach (var sfo in new[]
             {
                 Path.Combine(Rpcs3Dir, "dev_hdd0", "game", TitleId, "PARAM.SFO"),
-                GameDir == null ? null : Path.Combine(GameDir, "PS3_GAME", "PARAM.SFO"),
+                GameParamSfo,
             })
             {
                 string v = ReadSfoString(sfo, "APP_VER");
@@ -683,8 +872,9 @@ namespace DragonCrownProEnhanced
             Add("RPCS3 executable", File.Exists(Rpcs3Exe), Rpcs3Exe, "RPCS3를 <ROOT>\\RPCS3 에 설치하세요.");
             Add("KnownGood fallback", File.Exists(KnownGoodExe), File.Exists(KnownGoodExe) ? "있음" : "없음",
                 "MAINTENANCE → KnownGood 실행을 쓰려면 스냅샷이 필요합니다.");
-            Add("Game path", GameExe != null && File.Exists(GameExe), GameExe ?? "미탐지",
-                "RPCS3 게임 목록에 Dragon's Crown을 추가하세요(config\\games.yml).");
+            Add("Game path", GameExe != null && File.Exists(GameExe),
+                GameExe ?? "미탐지",
+                "SETTINGS → Advanced → [게임 폴더 선택] 또는 RPCS3 게임 목록에 추가(config\\games.yml).");
             Add("Game version (BCAS20298 v" + NetplayRequiredVersion + ")", GameVersion() == NetplayRequiredVersion, "v" + GameVersion(),
                 "RPCN / Netplay Safe 에는 v" + NetplayRequiredVersion + " 가 필요합니다. 공식 업데이트를 적용하세요.");
             Add("Firmware", FirmwareVersion() != "미확인", FirmwareVersion(), "RPCS3에 PS3 firmware를 설치하세요.");
@@ -765,7 +955,11 @@ namespace DragonCrownProEnhanced
         {
             string cfg = BuildRuntimeConfig(profileName);
             string exe = useKnownGood && File.Exists(KnownGoodExe) ? KnownGoodExe : Rpcs3Exe;
-            if (GameExe == null || !File.Exists(GameExe)) throw new FileNotFoundException("게임 덤프를 찾을 수 없습니다 (games.yml 확인).");
+            if (GameExe == null || !File.Exists(GameExe))
+                throw new FileNotFoundException(
+                    "Dragon's Crown [BCAS20298] 경로를 찾을 수 없습니다.\n" +
+                    "게임 폴더를 직접 선택하거나 RPCS3 게임 목록을 확인하세요.\n" +
+                    "(game.txt / games.yml / ROOT\\Games 를 순서대로 탐색했습니다)");
 
             bool blockReShade = forceReShadeOff || !ReShadeEnabled;
             Log($"launch: profile={profileName} mode={DisplayMode} preset={GraphicsPreset} resolution={ResolutionProfile} " +

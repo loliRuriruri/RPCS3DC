@@ -65,3 +65,27 @@
 
 * 설정/프로필/업데이트/ReShade/캐시/세이브별 원복: `ROLLBACK.md`
 * RPCS3 전체 초기화: 원본 `C:\Users\<user>\Downloads\rpcs3-…` 에서 재복제(원본은 항상 보존)
+
+---
+
+## 게임 경로를 찾지 못할 때 (다른 PC로 복사한 경우)
+
+증상: RPCS3 목록에는 `Dragon's Crown / BCAS20298 / 01.09` 가 정상 표시되는데
+런처에서 "Dragon's Crown [BCAS20298] 경로를 찾을 수 없습니다." 가 나오는 경우.
+
+원인: RPCS3 `config\games.yml` 의 경로 형식이 PC마다 다를 수 있습니다.
+(disc root / `...\PS3_GAME` / `...\PS3_GAME\.\` / EBOOT.BIN 경로 / USRDIR 경로)
+
+해결 순서:
+
+1. 런처의 오류 창에서 **[예] 게임 폴더 선택** → 게임의 **Disc root** 또는 **PS3_GAME** 폴더 선택
+   (성공하면 `Launcher\game.txt` 에 저장되어 다음 실행부터 자동 사용)
+2. 또는 RPCS3 에서 **Add Games** 로 다시 등록 → 런처의 **[RPCS3 상태 새로고침]** 클릭
+   (런처 재실행 불필요 — 재탐지가 실행됩니다)
+3. 게임을 `<ROOT>\Games\...` 아래에 두면 games.yml 경로가 없어도 자동 탐지됩니다
+   (예: `<ROOT>\Games\Dragon's Crown\PS3_GAME\USRDIR\EBOOT.BIN`)
+4. 진단: `DragonCrownProEnhanced.exe --game` (탐지 상태) / `--probe "<경로>"` (경로 해석 결과)
+   로그: `Logs\launcher.log` 의 `[GameResolver]` 줄
+
+참고: 런처는 게임 파일을 복사/이동/수정하지 않습니다. 다른 게임 폴더(BCAS20298 아님)는
+검증에서 거부됩니다.

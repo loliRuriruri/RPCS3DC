@@ -1,3 +1,16 @@
+## 2026-09-27 — 게임 경로 이식성 수정 (다른 PC false-negative 해결)
+
+| # | 변경 | 위치 | 비고 |
+|---|---|---|---|
+| 141 | **게임 경로 리졸버 재작성** | `launcher/src/Project.cs` | candidate 방식: disc root / direct PS3_GAME / `PS3_GAME/./` / EBOOT.BIN / USRDIR + 1~2단계 parent fallback. 경로 정규화(따옴표·슬래시·`.` 세그먼트·trailing separator, UNC 안전) |
+| 142 | BCAS20298 검증 | 동일 | `PS3_GAME\PARAM.SFO` 의 TITLE_ID 확인(불일치 시 거부) — 다른 게임 EBOOT.BIN 오선택 방지 |
+| 143 | Portable fallback | 동일 | 우선순위: games.yml → `Launcher\game.txt` → `ROOT\Games`/`ROOT\Game` → ROOT 제한 depth(≤3, 1500 dirs) 탐색. **전체 드라이브 스캔 금지** |
+| 144 | 수동 게임 폴더 선택 | 런처 UI + `--set-game` CLI | Disc root / PS3_GAME 모두 허용, 성공 시 `Launcher\game.txt` 저장. 게임 파일은 복사/이동/수정하지 않음 |
+| 145 | 상태 새로고침 재탐지 | `RefreshGameDiscovery()` + RPCS3 새로고침 버튼 | RPCS3 Add Games 후 **런처 재실행 없이** 즉시 반영 |
+| 146 | game.txt 덮어쓰기 버그 수정 | `ResolveGame()` + `App.Exit` | games.yml/game.txt 로 해석된 경우 자동 저장하지 않음(portable fallback 만 저장) + 종료 시 최소 Discover(게임 탐지 미실행) |
+| 147 | 검증(실측) | Logs | 경로 형태 A~E PASS / portable fallback PASS / 수동 선택·game.txt 지속 PASS / 잘못된 폴더 거부 PASS / Standard 부팅 59.9fps·ReShade OFF PASS |
+
+원인 요약: 다른 PC에서 RPCS3가 games.yml 에 `.../PS3_GAME/./` 형태로 저장했을 때 기존 리졸버가 이를 해석하지 못해(그리고 경로 부재 시 즉시 포기) false-negative 발생. 추가로 종료 핸들러가 재탐지를 돌려 game.txt 를 덮어쓰는 부수 버그도 함께 수정.
 # RPCS3 CHANGELOG — E:\PS3 구축 작업
 
 모든 변경은 **원본 C:\ 설치본을 건드리지 않고** `E:\PS3` 안에서만 수행했습니다.

@@ -16,7 +16,9 @@ namespace DragonCrownProEnhanced
             {
                 try
                 {
-                    var p = Project.Discover();
+                    // minimal discovery only: never re-run game discovery on exit
+                    // (it must not touch game.txt / settings)
+                    var p = Project.Discover(discoverGame: false);
                     string state = Path.Combine(p.LogDir, "borderless_state.json");
                     if (File.Exists(state))
                     {
@@ -214,6 +216,46 @@ namespace DragonCrownProEnhanced
                             proc.WaitForExit();
                             p.Log("cli --launch " + what + " -> game exited (code " + proc.ExitCode + ")");
                         }
+                        break;
+                    }
+                    case "--set-game":
+                    {
+                        string path = args.Length > 1 ? args[1] : "";
+                        bool ok = p.SetGameRoot(path, out string err);
+                        Console.WriteLine(ok ? "OK  " + p.GameDir : "FAIL  " + err);
+                        p.Log($"cli --set-game [{path}] -> {(ok ? "OK " + p.GameDir : "FAIL " + err)}");
+                        break;
+                    }
+                    case "--game":
+                    {
+                        string outFile = args.Length > 1 ? args[1] : Path.Combine(p.LogDir, "game_path.txt");
+                        string gameTxt = Path.Combine(AppContext.BaseDirectory, "game.txt");
+                        var lines = new[]
+                        {
+                            "ROOT=" + p.Root,
+                            "GAMES_YML=" + Path.Combine(p.Rpcs3Dir, "config", "games.yml"),
+                            "GAME_ROOT=" + (p.GameDir ?? "(not found)"),
+                            "GAME_EXE=" + (p.GameExe ?? "(none)"),
+                            "TITLE_ID=" + (p.GameTitleId ?? "(unknown)"),
+                            "APP_VER=" + p.GameVersion(),
+                            "GAME_TXT=" + (File.Exists(gameTxt) ? File.ReadAllText(gameTxt).Trim() : "(none)"),
+                        };
+                        Directory.CreateDirectory(p.LogDir);
+                        File.WriteAllLines(outFile, lines);
+                        foreach (var l in lines) Console.WriteLine(l);
+                        p.Log("cli --game -> " + (p.GameDir ?? "(not found)"));
+                        break;
+                    }
+                    case "--probe":
+                    {
+                        string raw = args.Length > 1 ? args[1] : "";
+                        string norm = Project.NormalizePath(raw);
+                        bool ok = p.TryResolveGamePath(raw, out string root, out string detail);
+                        Console.WriteLine("raw        = [" + raw + "]");
+                        Console.WriteLine("normalized = [" + norm + "]");
+                        Console.WriteLine("result     = " + (ok ? "OK  " + root : "FAIL"));
+                        Console.WriteLine("detail     = " + detail);
+                        p.Log($"cli --probe raw=[{raw}] norm=[{norm}] -> {(ok ? "OK " + root : "FAIL")} ({detail})");
                         break;
                     }
                     case "--rpcs3":
