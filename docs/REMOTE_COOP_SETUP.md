@@ -34,8 +34,9 @@ HOST PC (게임 실행)
 | **ViGEmBus + gamepad=x360** | **FREE** (legacy/EOL) | 가상 Xbox 360 / XInput 패드 → RPCS3 Player 2 (권장) |
 | Virtual HID Driver | 유료 (연 $14.99 / 평생 $49.99) | **선택(premium)** — Dragon's Crown 에는 **필요하지 않음** |
 
-* Dragon's Crown 은 이미 **P1=DualSense, P2=XInput** 로 Local 2P 가 검증되어 있으므로,
-  **무료 ViGEmBus 의 Xbox 360/XInput 가상패드면 충분**합니다.
+* Dragon's Crown 의 **P1=DualSense, P2=XInput 입력 구성**이 확인되어 있으므로
+  (실제 2P 플레이 regression 은 재검증 전까지 **PENDING**),
+  무료 ViGEmBus 의 Xbox 360/XInput 가상패드면 충분합니다.
 * Virtual HID 라이선스가 없어도 설치 흐름은 **FAIL/STOP 되지 않습니다** (WARNING/OPTIONAL).
 * Helper 는 Virtual HID 를 **감지만** 하며 자동 활성화/구매를 유도하지 않습니다.
 

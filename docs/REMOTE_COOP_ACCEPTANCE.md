@@ -2,6 +2,11 @@
 
 작성일: 2026-09-26 · 상태 표기: **PASS / FAIL / PENDING** (세 가지 외 사용 금지)
 
+> **현재 상태: REMOTE CO-OP HELPER RC / IMPLEMENTATION COMPLETE / E2E ACCEPTANCE PENDING**
+> · `remote-coop-helper` 브랜치 = RC (main 미병합 · 최종 태그 없음)
+> · Local 2P regression 은 **실제 플레이 재검증 전까지 PENDING** (코드 경로/설정 보존만 확인)
+> · merge / tag 는 Remote E2E Acceptance 완료 후 결정
+
 > **실제 2대 PC 테스트 전에는 E2E 항목을 PASS 로 쓰지 않습니다.**
 > 이 문서는 Remote Co-op Helper v1 의 승인 기록 양식입니다. 결과는 복사해서 채웁니다.
 
@@ -93,7 +98,7 @@ Clean Windows 기준. 이 PC 에서는 이미 RPCS3 환경이 있으므로 "Clea
 | # | 항목 | 방법 | 상태 |
 |---|---|---|---|
 | D1 | Solo (Standard) | 런처 PLAY | PASS (헬퍼와 독립 실행 파일) |
-| D2 | Local 2P | 런처 Local | PENDING (2P 패드 필요) |
+| D2 | **Local 2P regression** | 런처 Local | **PENDING — 실제 플레이 재검증 전까지 PENDING** (2P 패드 필요). 코드 경로/설정(P1·P2) 보존만 확인됨 |
 | D3 | Standard / Pro Enhanced | 런처 프리셋 | PASS (런처 재빌드 후 스모크) |
 | D4 | RPCN UI | 런처 RPCN 화면 | PASS (런처 스모크) |
 | D5 | Backup / Restore | 런처 TOOLS | PASS (기존 기능 유지) |
