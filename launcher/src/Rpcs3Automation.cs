@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Threading;
 
 namespace DragonCrownProEnhanced
 {
@@ -27,9 +28,21 @@ namespace DragonCrownProEnhanced
                     "-NoProfile -ExecutionPolicy Bypass -EncodedCommand " + encoded)
                 { UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true, CreateNoWindow = true };
                 using var proc = Process.Start(psi);
+
+                // UI Automation Invoke can stay blocked while the modal settings dialog is open,
+                // so wait only briefly for the RESULT line and treat "still running" as delivered.
+                var deadline = DateTime.UtcNow.AddSeconds(8);
+                while (DateTime.UtcNow < deadline && !proc.HasExited) Thread.Sleep(200);
+
+                if (!proc.HasExited)
+                {
+                    p.Log($"rpcs3 uia [{kind}]: invoke delivered (UIA client still busy with the modal dialog - treated as ok)");
+                    try { proc.Kill(); } catch { }
+                    return (true, "Settings dialog requested via UI Automation (" + kind + ")");
+                }
+
                 string stdout = proc.StandardOutput.ReadToEnd();
                 string stderr = proc.StandardError.ReadToEnd();
-                proc.WaitForExit(20000);
 
                 string result = stdout.Split('\n').Select(s => s.Trim()).FirstOrDefault(s => s.StartsWith("RESULT=")) ?? "";
                 p.Log($"rpcs3 uia [{kind}]: {(result.Length > 0 ? result : "(no result)")}" +

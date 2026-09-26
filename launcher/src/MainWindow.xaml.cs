@@ -381,16 +381,30 @@ namespace DragonCrownProEnhanced
         }
 
         // ------------------------------------------------------------- RPCS3 설정 (bridge)
-        private void OpenRpcs3Settings(Rpcs3SettingsKind kind)
+        private bool _rpcs3Busy;
+
+        private async void OpenRpcs3Settings(Rpcs3SettingsKind kind)
         {
+            if (_rpcs3Busy) { Append("RPCS3 설정을 여는 중입니다..."); return; }
+            _rpcs3Busy = true;
+            Append("RPCS3 설정 여는 중: " + kind + " (기존 인스턴스 재사용)");
             try
             {
-                var (ok, msg) = Rpcs3UiBridge.OpenSettings(_p, kind);
-                Append("RPCS3: " + msg.Replace("\r\n", " | ").Replace("\n", " | "));
-                if (!ok) MessageBox.Show(msg, "RPCS3 설정", MessageBoxButton.OK, MessageBoxImage.Information);
+                var result = await System.Threading.Tasks.Task.Run(() => Rpcs3UiBridge.OpenSettings(_p, kind));
+                string flat = result.message.Replace("\r\n", " | ").Replace("\n", " | ");
+                Append("RPCS3: " + flat);
+                if (!result.ok) MessageBox.Show(result.message, "RPCS3 설정", MessageBoxButton.OK, MessageBoxImage.Information);
             }
-            catch (Exception ex) { Append("RPCS3 설정 오류: " + ex.Message); MessageBox.Show(ex.Message); }
-            RefreshStatus();
+            catch (Exception ex)
+            {
+                Append("RPCS3 설정 오류: " + ex.Message);
+                MessageBox.Show(ex.Message);
+            }
+            finally
+            {
+                _rpcs3Busy = false;
+                RefreshStatus();
+            }
         }
 
         private void BtnRpcs3Controller_Click(object sender, RoutedEventArgs e) => OpenRpcs3Settings(Rpcs3SettingsKind.Controller);
