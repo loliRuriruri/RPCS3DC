@@ -1,0 +1,21 @@
+﻿# 제3자 바이너리 / 개인 데이터 제외
+RPCS3/
+Games/
+Saves/
+Cheats/
+Backups/
+Logs/
+Screenshots_AB/
+*.exe
+*.dll
+*.pkg
+*.PUP
+*.7z
+*.zip
+*.dat
+*.iso
+rpcn.yml
+config.yml
+CurrentSettings.ini
+*.png
+*.jpg
